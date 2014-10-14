@@ -14,11 +14,13 @@ public:
 	enum TokenType {
 		Space,
 		Word,
+		KeyWord,
 		Digit,
 		String,
 		Char,
 		StartScope,
 		SpacedOutCharacter,
+		PreprocessorCommand,
 		None
 	};
 	Token (std::string str, TokenType type):

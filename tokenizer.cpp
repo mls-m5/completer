@@ -8,9 +8,31 @@
 #include "tokenizer.h"
 
 #include <sstream>
+#include <vector>
+#include <fstream>
 using namespace std;
 
 string specialCharacters = "_{}[]#()<>%:;.?*+-/^&|∼!=,\'";
+
+static class KeyWords: public vector<string>{
+public:
+	KeyWords(){
+		ifstream file("keywords.txt");
+		string word;
+		while (file >> word){
+			push_back(word);
+		}
+	}
+
+	bool isKeyWord(const string &c){
+		for (auto &it: *this){
+			if (it == c){
+				return true;
+			}
+		}
+		return false;
+	}
+} keyWords;
 
 Tokenizer::Tokenizer() {
 }
@@ -23,7 +45,7 @@ Token Tokenizer::getNextToken(std::istream& stream) {
 
 	Token::TokenType mode = Token::None;
 
-	while (!stream.eof()){
+	while (stream){
 		char c = stream.get();
 		switch (mode){
 		case Token::None:
@@ -47,7 +69,16 @@ Token Tokenizer::getNextToken(std::istream& stream) {
 				mode = Token::String;
 				continue;
 			}
-			else if(specialCharacters.find(c) != string::npos){
+			else if(c == '#'){
+				mode = Token::PreprocessorCommand;
+				ss.put(c);
+
+				char line[500];
+				stream.getline(line, 500);
+				ss << line;
+				return Token(ss.str(), Token::PreprocessorCommand);
+			}
+			else if(specialCharacters.find(c) != string::npos && stream){
 				mode = Token::SpacedOutCharacter;
 				ss.put(c);
 				return Token(ss.str(), Token::SpacedOutCharacter);
@@ -55,7 +86,7 @@ Token Tokenizer::getNextToken(std::istream& stream) {
 		}
 		break;
 		case Token::Space:
-			while (isspace(c) && !stream.eof()){
+			while (isspace(c) && stream){
 				ss.put(c);
 				c = stream.get();
 			}
@@ -63,15 +94,18 @@ Token Tokenizer::getNextToken(std::istream& stream) {
 			return Token(ss.str(), Token::Space);
 
 		case Token::Word:
-			while (isalnum(c) && !stream.eof()){
+		{
+			while (isalnum(c) && stream){
 				ss.put(c);
 				c = stream.get();
 			}
 			stream.unget();
-			return Token(ss.str(), Token::Word);
+			bool isKeyword = keyWords.isKeyWord(ss.str());
+			return Token(ss.str(), isKeyword? Token::KeyWord : Token::Word);
+		}
 
 		case Token::Digit:
-			while ((isdigit(c) || c == '.') && !stream.eof()){
+			while ((isdigit(c) || c == '.') && stream){
 				ss.put(c);
 				c = stream.get();
 			}
@@ -79,7 +113,7 @@ Token Tokenizer::getNextToken(std::istream& stream) {
 			return Token(ss.str(), Token::Digit);
 
 		case Token::String:
-			while (c != '"' && !stream.eof()){
+			while (c != '"' && stream){
 				ss.put(c);
 				c = stream.get();
 				if (c == '\\'){

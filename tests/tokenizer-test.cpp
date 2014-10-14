@@ -35,6 +35,19 @@ TEST_CASE("parse word"){
 	auto ret = tokenizer.getNextToken(ss);
 
 	ASSERT_EQ(ret, "apa");
+	ASSERT_EQ(ret.type, Token::Word);
+}
+
+TEST_CASE("parse keyword"){
+	Tokenizer tokenizer;
+
+	stringstream ss;
+	ss << "int bepa";
+
+	auto ret = tokenizer.getNextToken(ss);
+
+	ASSERT_EQ(ret, "int");
+	ASSERT_EQ(ret.type, Token::KeyWord);
 }
 
 TEST_CASE("parse digit"){
@@ -74,6 +87,15 @@ TEST_CASE("parse special character"){
 	}
 
 	return 0;
+}
+
+TEST_CASE("preprocessor command"){
+	Tokenizer tokenizer;
+	stringstream ss("#define apa bepa\n cepa");
+	auto ret = tokenizer.getNextToken(ss);
+
+	ASSERT_EQ(ret.type, Token::PreprocessorCommand);
+	ASSERT_EQ(ret, "#define apa bepa");
 }
 
 TEST_SUIT_END

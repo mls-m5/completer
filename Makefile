@@ -8,7 +8,7 @@ CFLAGS+=--std=c++11 -g
 all: $(OBJECTS) $(TEST_BIN)
 	@echo Klart
 	
-%.o: %.cpp *.cpp *.h
+%.o: %.cpp *.h
 	g++ $< -c -o $@ $(CFLAGS)
 	
 tests/%: tests/%.cpp *.cpp *.h
