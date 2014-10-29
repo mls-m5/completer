@@ -9,6 +9,7 @@
 
 #include <vector>
 #include <iostream>
+#include <memory>
 
 struct FilePosition {
 	FilePosition() {
@@ -19,6 +20,27 @@ struct FilePosition {
 
 	int line, column;
 };
+
+class SourceContent {
+public:
+
+	enum ContentType{
+		None,
+		DataType,
+	};
+
+	ContentType type = None;
+
+};
+
+class DataTypeContent: public SourceContent {
+public:
+	DataTypeContent(){
+		type = DataType;
+	}
+	std::string name;
+};
+
 class SourceTree: public std::vector<SourceTree> {
 public:
 	enum Type{
@@ -33,6 +55,7 @@ public:
 
 	FilePosition parse(std::istream &stream, FilePosition startPos = FilePosition());
 
-	Type type;
+	std::shared_ptr<SourceContent> content = 0;
+	Type type = BasicType;
 };
 

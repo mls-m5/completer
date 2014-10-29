@@ -131,3 +131,6 @@ Token Tokenizer::getNextToken(std::istream& stream) {
 
 	return Token(ss.str(), Token::None);
 }
+
+//Token Tokenizer::GetNextToken(std::istream& stream) {
+//}

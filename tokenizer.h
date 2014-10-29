@@ -40,5 +40,6 @@ public:
 	virtual ~Tokenizer();
 
 	Token getNextToken(std::istream &stream);
+	Token GetNextToken(std::istream& stream);
 };
 

@@ -11,6 +11,21 @@
 
 using namespace std;
 
+std::vector<string> dataTypes = {
+		//Todo:: Fill this
+		"int",
+		"float",
+		"short",
+};
+
+bool isDataType(string &name){
+	for (auto &it: dataTypes){
+		if (it == name){
+			return true;
+		}
+	}
+	return false;
+}
 
 SourceTree::SourceTree() {
 }
@@ -36,6 +51,13 @@ FilePosition SourceTree::parse(std::istream& stream, FilePosition fileIterator) 
 			cout << "end of scope" << endl;
 		}
 		else if (token.type == Token::KeyWord){
+			if (isDataType(token)){
+				cout << "datatype";
+				token = tokenizer.getNextToken(stream);
+				auto newContent = new DataTypeContent;
+				newContent->name = token;
+				content = std::shared_ptr<SourceContent>(newContent);
+			}
 			cout << "keyword" << endl;
 		}
 	}

@@ -20,4 +20,17 @@ TEST_CASE("create source tree"){
 	return 0;
 }
 
+TEST_CASE("basic data type"){
+	stringstream ss("int apa");
+
+	SourceTree sourceTree;
+	sourceTree.parse(ss);
+
+	ASSERT(sourceTree.content, "ingen content (innehåll)");
+
+	ASSERT_EQ(sourceTree.content->type, SourceContent::DataType);
+
+	return 1;
+}
+
 TEST_SUIT_END
