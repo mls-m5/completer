@@ -17,7 +17,22 @@ TEST_CASE("create source tree"){
 	SourceTree sourceTree;
 	sourceTree.parse(ss);
 
-	return 0;
+	sourceTree.print(cout, 0);
+
+	ASSERT_EQ(sourceTree.size(), 4);
+//	ASSERT_EQ(sourceTree[0].size(), 2); //check if this is supposed to be the case
+}
+
+TEST_CASE("second pass"){
+	stringstream ss("int main(int argc, char **argv)\n"
+			"{ cout << \"hello world\" << endl;\n"
+			" return 0;\n"
+			" }\n");
+
+	SourceTree sourceTree;
+	sourceTree.parse(ss);
+
+	sourceTree.secondPass();
 }
 
 TEST_CASE("basic data type"){

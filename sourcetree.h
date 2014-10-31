@@ -10,7 +10,9 @@
 #include <vector>
 #include <iostream>
 #include <memory>
+#include <list>
 
+#include "tokenizer.h"
 struct FilePosition {
 	FilePosition() {
 		line = 1;
@@ -41,21 +43,35 @@ public:
 	std::string name;
 };
 
-class SourceTree: public std::vector<SourceTree> {
+class SourceTree: public std::list<SourceTree> {
 public:
-	enum Type{
+	enum DataType{
 		BasicType,
+		Type,
 		UnqualifiedId,
 		Scope,
+		ArrayList,
+		Raw,
 
-		ArrayList
+		ArrayBlock,
+
+		BraceBlock,
+		BracketBlock,
+		ParanthesisBlock,
 	};
 	SourceTree();
 	virtual ~SourceTree();
 
 	FilePosition parse(std::istream &stream, FilePosition startPos = FilePosition());
+	void secondPass();
 
+	void print(std::ostream &stream, int level);
+
+	SourceTree *findDataType(std::string &name);
+	static SourceTree *FindBasicType(std::string &name);
+
+	Token name = Token("", Token::None);
 	std::shared_ptr<SourceContent> content = 0;
-	Type type = BasicType;
+	DataType type = BasicType;
 };
 

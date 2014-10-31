@@ -15,11 +15,9 @@ using namespace std;
 TEST_SUIT_BEGIN
 
 TEST_CASE("parse spaces"){
-	Tokenizer tokenizer;
-
 	stringstream ss("     \tapa ");
 
-	auto ret = tokenizer.getNextToken(ss);
+	auto ret = Tokenizer::GetNextToken(ss);
 
 	ASSERT(ret.compare("     \t") == 0, "not expected token");
 
@@ -27,48 +25,43 @@ TEST_CASE("parse spaces"){
 }
 
 TEST_CASE("parse word"){
-	Tokenizer tokenizer;
 
 	stringstream ss;
 	ss << "apa bepa";
 
-	auto ret = tokenizer.getNextToken(ss);
+	auto ret = Tokenizer::GetNextToken(ss);
 
 	ASSERT_EQ(ret, "apa");
 	ASSERT_EQ(ret.type, Token::Word);
 }
 
 TEST_CASE("parse keyword"){
-	Tokenizer tokenizer;
-
 	stringstream ss;
 	ss << "int bepa";
 
-	auto ret = tokenizer.getNextToken(ss);
+	auto ret = Tokenizer::GetNextToken(ss);
 
 	ASSERT_EQ(ret, "int");
 	ASSERT_EQ(ret.type, Token::KeyWord);
 }
 
 TEST_CASE("parse digit"){
-	Tokenizer tokenizer;
 	stringstream ss;
 
 	ss << ".99 2.4";
 
-	auto ret1 = tokenizer.getNextToken(ss);
-	tokenizer.getNextToken(ss); //space
-	auto ret2 = tokenizer.getNextToken(ss);
+	auto ret1 = Tokenizer::GetNextToken(ss);
+	Tokenizer::GetNextToken(ss); //space
+	auto ret2 = Tokenizer::GetNextToken(ss);
 
 	ASSERT_EQ(ret1, ".99");
 	ASSERT_EQ(ret1.type, Token::Digit);
 }
 
 TEST_CASE("parse string"){
-	Tokenizer tokenizer;
 	string testString("apan is \\\"sneel\\\"");
 	stringstream ss("\"" + testString +  "\" bepan is dum");
-	auto ret = tokenizer.getNextToken(ss);
+	auto ret = Tokenizer::GetNextToken(ss);
 
 
 	ASSERT_EQ(ret, testString);
@@ -77,9 +70,8 @@ TEST_CASE("parse string"){
 }
 
 TEST_CASE("parse special character"){
-	Tokenizer tokenizer;
 	stringstream ss("&%#");
-	auto ret = tokenizer.getNextToken(ss);
+	auto ret = Tokenizer::GetNextToken(ss);
 
 	for (int i = 0; i < 3; ++i){
 		ASSERT_EQ(ret.size(), 1);
@@ -90,9 +82,8 @@ TEST_CASE("parse special character"){
 }
 
 TEST_CASE("preprocessor command"){
-	Tokenizer tokenizer;
 	stringstream ss("#define apa bepa\n cepa");
-	auto ret = tokenizer.getNextToken(ss);
+	auto ret = Tokenizer::GetNextToken(ss);
 
 	ASSERT_EQ(ret.type, Token::PreprocessorCommand);
 	ASSERT_EQ(ret, "#define apa bepa");

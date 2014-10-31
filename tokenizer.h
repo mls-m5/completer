@@ -23,23 +23,26 @@ public:
 		PreprocessorCommand,
 		None
 	};
+	Token (std::string str): std::string(str) {}
 	Token (std::string str, TokenType type):
-		type(type){
-		this->std::string::operator=(str);
+		type(type),
+		std::string(str){
 	}
 
-	TokenType type;
+	std::string getStringContent(){
+		if (size() > 2){
+			return substr(1, size() - 2);
+		}
+		else{
+			return std::string();
+		}
+	}
+
+	TokenType type = None;
 
 };
 
-class Tokenizer {
-public:
-
-
-	Tokenizer();
-	virtual ~Tokenizer();
-
-	Token getNextToken(std::istream &stream);
+namespace Tokenizer {
 	Token GetNextToken(std::istream& stream);
 };
 

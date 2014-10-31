@@ -34,13 +34,7 @@ public:
 	}
 } keyWords;
 
-Tokenizer::Tokenizer() {
-}
-
-Tokenizer::~Tokenizer() {
-}
-
-Token Tokenizer::getNextToken(std::istream& stream) {
+Token Tokenizer::GetNextToken(std::istream& stream) {
 	stringstream ss;
 
 	Token::TokenType mode = Token::None;
@@ -55,7 +49,7 @@ Token Tokenizer::getNextToken(std::istream& stream) {
 				mode = Token::Space;
 				continue;
 			}
-			else if (isalpha(c)){
+			else if (isalpha(c) or c == '_'){
 				ss.put(c);
 				mode = Token::Word;
 				continue;
@@ -67,6 +61,7 @@ Token Tokenizer::getNextToken(std::istream& stream) {
 			}
 			else if(c == '"'){
 				mode = Token::String;
+				ss.put(c);
 				continue;
 			}
 			else if(c == '#'){
@@ -78,6 +73,24 @@ Token Tokenizer::getNextToken(std::istream& stream) {
 				ss << line;
 				return Token(ss.str(), Token::PreprocessorCommand);
 			}
+			if (c == '/'){
+				//possible comment
+				if (stream.peek() == '/' or stream.peek() == '*'){
+					mode = Token::Space;
+					stream.unget();
+					continue;
+				}
+			}
+			if (c == '\''){
+				c = stream.get();
+				if (c == '\''){
+					return Token("", Token::Char);
+				}
+				if (stream.get() == '\''){
+					char tmp[2] = {c, 0};
+					return Token(tmp, Token::Char);
+				}
+			}
 			else if(specialCharacters.find(c) != string::npos && stream){
 				mode = Token::SpacedOutCharacter;
 				ss.put(c);
@@ -86,7 +99,27 @@ Token Tokenizer::getNextToken(std::istream& stream) {
 		}
 		break;
 		case Token::Space:
-			while (isspace(c) && stream){
+			while ((isspace(c) or c == '/') && stream){
+				if (c == '/'){ //Ignore comments
+					if (stream.peek() == '/'){
+						while (c != '\n' and stream){
+							ss.put(c);
+							c = stream.get();
+						}
+					}
+					else if (stream.peek() == '*'){ //c-style comment
+						while (!(c == '*' and stream.peek() == '/') and stream){
+							ss.put(c);
+							c = stream.get();
+						}
+						ss.put(c);
+						c = stream.get();
+					}
+					else{
+						return Token("/", Token::SpacedOutCharacter);
+					}
+				}
+
 				ss.put(c);
 				c = stream.get();
 			}
@@ -95,7 +128,7 @@ Token Tokenizer::getNextToken(std::istream& stream) {
 
 		case Token::Word:
 		{
-			while (isalnum(c) && stream){
+			while ((isalnum(c) or c == '_') && stream){
 				ss.put(c);
 				c = stream.get();
 			}
@@ -123,14 +156,11 @@ Token Tokenizer::getNextToken(std::istream& stream) {
 					c = stream.get();
 				}
 			}
+			ss.put('"');
 
-			//No unget here, we dont want to keep trailing '"'
 			return Token(ss.str(), Token::String);
 		}
 	}
 
 	return Token(ss.str(), Token::None);
 }
-
-//Token Tokenizer::GetNextToken(std::istream& stream) {
-//}
