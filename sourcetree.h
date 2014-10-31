@@ -55,7 +55,7 @@ public:
 		Raw,
 
 		VariableDeclaration,
-		VariableDeclarationAndInitialization,
+//		VariableDeclarationAndInitialization,
 		ControlStatementKeyword,
 		ControlStatement,
 
@@ -68,6 +68,8 @@ public:
 
 		ClassKeyword,
 		ClassDeclaration,
+		StructKeyword,
+		StructDeclaration,
 
 		TemplateKeyword,
 

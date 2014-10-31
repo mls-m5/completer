@@ -43,6 +43,8 @@ map<string, SourceTree::DataType> nameInterpretations = {
 		{"switch", SourceTree::ControlStatementKeyword},
 		{"class", SourceTree::ClassKeyword},
 		{"template", SourceTree::TemplateKeyword},
+		{"struct", SourceTree::StructKeyword},
+
 
 		{"+", SourceTree::Operator},
 		{"++", SourceTree::Operator},
@@ -54,33 +56,45 @@ map<string, SourceTree::DataType> nameInterpretations = {
 
 };
 
-const vector<SourceTree::DataType> variableDeclarationPattern = {
+typedef const vector<SourceTree::DataType> patternType;
+
+patternType variableDeclarationPattern = {
 		SourceTree::Type,
 		SourceTree::Raw,
 //		SourceTree::Semicolon
 };
 
-const vector<SourceTree::DataType> initializedVariableDeclaration = {
-		SourceTree::Type,
-		SourceTree::Raw,
-		SourceTree::Equals
-};
-
-const vector<SourceTree::DataType> controlStatementPattern = {
+patternType controlStatementPattern = {
 		SourceTree::ControlStatementKeyword,
 		SourceTree::ParanthesisBlock,
 		SourceTree::BraceBlock
 };
 
-const vector<SourceTree::DataType> classDeclarationPattern = {
+patternType classDeclarationPattern = {
 		SourceTree::ClassKeyword,
 		SourceTree::Raw,
 		SourceTree::BraceBlock
 };
 
-const vector<SourceTree::DataType> anonymousClassDeclarationPattern = {
+patternType structDeclarationPattern = {
+		SourceTree::StructKeyword,
+		SourceTree::Raw,
+		SourceTree::BraceBlock
+};
+
+patternType anonymousClassDeclarationPattern = {
 		SourceTree::ClassKeyword,
 		SourceTree::BraceBlock
+};
+
+
+std::map<patternType, SourceTree::DataType> patternInterpretations = {
+		{anonymousClassDeclarationPattern, SourceTree::ClassDeclaration},
+		{classDeclarationPattern, SourceTree::ClassDeclaration},
+		{structDeclarationPattern, SourceTree::StructDeclaration},
+		{controlStatementPattern, SourceTree::ControlStatement},
+		{variableDeclarationPattern, SourceTree::VariableDeclaration},
+
 };
 
 //For initializing stuff
@@ -206,12 +220,12 @@ void SourceTree::print(std::ostream& stream, int level) {
 		case VariableDeclaration:
 			stream << "variable declaration";
 			break;
-		case ControlStatementKeyword:
-			stream << name;
+		case ControlStatement:
+			stream << front().name;
 			break;
-		case VariableDeclarationAndInitialization:
-			stream << "declaration with initialization";
-			break;
+//		case VariableDeclarationAndInitialization:
+//			stream << "declaration with initialization";
+//			break;
 		case ClassDeclaration:
 			stream << "class";
 			break;
@@ -298,41 +312,13 @@ void SourceTree::secondPass() {
 			unprocessedExpressions.clear();
 			cout << "end of statement" << endl;
 		}
-		else if (comparePattern(unprocessedExpressions, variableDeclarationPattern)){
-			cout << "found declaration ";
-
-			for (auto it:unprocessedExpressions){
-				cout << it->name << " ";
+		else {
+			for (auto &pattern: patternInterpretations){
+				if (tryGroupExpressions(it, unprocessedExpressions,
+						pattern.first, pattern.second)){
+					cout << "grouped pattern " << pattern.second << endl;
+				}
 			}
-			cout << endl;
-			unprocessedExpressions.clear();
-
-			it = groupExpressions(it, variableDeclarationPattern.size());
-			it->type = VariableDeclaration;
-		}
-		else if (comparePattern(unprocessedExpressions, controlStatementPattern)){
-			cout << "control statement " << endl;
-			it = groupExpressions(it, controlStatementPattern.size());
-			it->type = ControlStatement;
-			it->print(cout, 0);
-		}
-		else if (comparePattern(unprocessedExpressions, initializedVariableDeclaration)){
-			cout << "initialized variable declaration" << endl;
-			it = groupExpressions(it, initializedVariableDeclaration.size());
-			it->type = VariableDeclarationAndInitialization;
-			it->print(cout, 0);
-		}
-		else if (tryGroupExpressions(it, unprocessedExpressions,
-				classDeclarationPattern, ClassDeclaration)){
-//		else if (comparePattern(unprocessedExpressions, classDeclarationPattern)){
-			cout << "class declaration" << endl;
-//			it = groupExpressions(it, classDeclarationPattern.size());
-//			it->type = ClassDeclaration;
-//			it->print(cout, 0);
-		}
-		else if (tryGroupExpressions(it, unprocessedExpressions,
-				anonymousClassDeclarationPattern,ClassDeclaration)){
-			cout << "sucseeded" << endl;
 		}
 
 		++it;
