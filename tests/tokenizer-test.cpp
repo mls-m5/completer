@@ -24,6 +24,24 @@ TEST_CASE("parse spaces"){
 	return 0;
 }
 
+TEST_CASE("multicharacter operator"){
+	stringstream ss("*= <<= ++ ");
+
+	auto ret = Tokenizer::GetNextToken(ss);
+
+	ASSERT_EQ(ret.type, Token::OperatorOrPunctuator) //fill in here
+	ASSERT_EQ(ret, "*=");
+	ret = Tokenizer::GetNextToken(ss); //Space
+	ret = Tokenizer::GetNextToken(ss); //Space
+	ASSERT_EQ(ret.type, Token::OperatorOrPunctuator) //fill in here
+	ASSERT_EQ(ret, "<<=");
+
+	ret = Tokenizer::GetNextToken(ss); //Space
+	ret = Tokenizer::GetNextToken(ss); //Space
+	ASSERT_EQ(ret.type, Token::OperatorOrPunctuator) //fill in here
+	ASSERT_EQ(ret, "++");
+}
+
 TEST_CASE("parse word"){
 
 	stringstream ss;
@@ -59,8 +77,8 @@ TEST_CASE("parse digit"){
 }
 
 TEST_CASE("parse string"){
-	string testString("apan is \\\"sneel\\\"");
-	stringstream ss("\"" + testString +  "\" bepan is dum");
+	string testString("\"apan is \\\"sneel\\\"\"");
+	stringstream ss(testString +  " bepan is dum");
 	auto ret = Tokenizer::GetNextToken(ss);
 
 
@@ -75,7 +93,7 @@ TEST_CASE("parse special character"){
 
 	for (int i = 0; i < 3; ++i){
 		ASSERT_EQ(ret.size(), 1);
-		ASSERT_EQ(ret.type, Token::SpacedOutCharacter);
+		ASSERT_EQ(ret.type, Token::OperatorOrPunctuator);
 	}
 
 	return 0;
@@ -87,6 +105,19 @@ TEST_CASE("preprocessor command"){
 
 	ASSERT_EQ(ret.type, Token::PreprocessorCommand);
 	ASSERT_EQ(ret, "#define apa bepa");
+}
+
+TEST_CASE("paranthesis"){
+	stringstream ss("(int)");
+	auto ret = Tokenizer::GetNextToken(ss);
+
+	ASSERT_EQ(ret, "(");
+
+	ret = Tokenizer::GetNextToken(ss);
+	ASSERT_EQ(ret, "int");
+
+	ret = Tokenizer::GetNextToken(ss);
+	ASSERT_EQ(ret, ")");
 }
 
 TEST_SUIT_END

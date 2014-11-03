@@ -58,6 +58,7 @@ public:
 //		VariableDeclarationAndInitialization,
 		ControlStatementKeyword,
 		ControlStatement,
+		AssignmentStatement,
 
 		Semicolon,
 		Coma,
@@ -72,6 +73,9 @@ public:
 		StructDeclaration,
 
 		TemplateKeyword,
+		ReturnKeyword,
+		NewKeyword,
+		DeleteKeyword,
 
 		BraceBlock,
 		BracketBlock,
@@ -86,7 +90,7 @@ public:
 	SourceTree::iterator groupExpressions(SourceTree::iterator last, int count);
 	SourceTree::iterator groupExpressions(SourceTree::iterator first, SourceTree::iterator last);
 
-	bool tryGroupExpressions(iterator &it, std::vector<SourceTree*> unprocessedExpressions,
+	bool tryGroupExpressions(iterator &it, std::vector<SourceTree*> &unprocessedExpressions,
 			const std::vector<DataType> &pattern, DataType resultingType);
 
 	void print(std::ostream &stream, int level);

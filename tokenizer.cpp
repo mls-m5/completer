@@ -6,6 +6,7 @@
  */
 
 #include "tokenizer.h"
+#include "preprocessing_op_or_punc.h"
 
 #include <sstream>
 #include <vector>
@@ -13,6 +14,7 @@
 using namespace std;
 
 string specialCharacters = "_{}[]#()<>%:;.?*+-/^&|∼!=,\'";
+
 
 static class KeyWords: public vector<string>{
 public:
@@ -33,6 +35,38 @@ public:
 		return false;
 	}
 } keyWords;
+
+//Return 0 if no match is found
+//-1 if several matches is found or one with a length larger than the expression
+//index of operator if only one is found with the same length
+int getPreprocessOperorOrSubString(std::string &beginning){
+	int foundstring = 0;
+	int count = 0;
+	for (int s = 1; s < preprocessingOpOrPunc.size(); ++s){
+		auto it = preprocessingOpOrPunc[s];
+		bool same = true;
+		if (beginning.size() > it.size()){
+			//not the same
+			continue;
+		}
+		for (int i = 0; i < beginning.size(); ++i){
+			if (beginning[i] != it[i]){
+				same = false;
+				break;
+			}
+		}
+		if (same){
+			if (foundstring){
+				return -1; //Several matches
+			}
+			else{
+				foundstring = s;
+			}
+		}
+	}
+
+	return foundstring;
+}
 
 Token Tokenizer::GetNextToken(std::istream& stream) {
 	stringstream ss;
@@ -94,7 +128,8 @@ Token Tokenizer::GetNextToken(std::istream& stream) {
 			else if(specialCharacters.find(c) != string::npos && stream){
 				mode = Token::SpacedOutCharacter;
 				ss.put(c);
-				return Token(ss.str(), Token::SpacedOutCharacter);
+				continue;
+//				return Token(ss.str(), Token::SpacedOutCharacter);
 			}
 		}
 		break;
@@ -159,6 +194,22 @@ Token Tokenizer::GetNextToken(std::istream& stream) {
 			ss.put('"');
 
 			return Token(ss.str(), Token::String);
+		case Token::SpacedOutCharacter:
+			std::string tmp = ss.str();
+			bool isOperatorIsh = getPreprocessOperorOrSubString(tmp) != 0;
+			ss.put(c);
+			tmp = ss.str(); //Todo: Optimize this
+			while ((getPreprocessOperorOrSubString(tmp)) && stream){
+				c = stream.get();
+				ss.put(c);
+				tmp = ss.str();
+				isOperatorIsh = true;
+			}
+			stream.unget();
+			return Token(tmp.substr(0, tmp.size() -1),
+					isOperatorIsh? Token::OperatorOrPunctuator: Token::SpacedOutCharacter);
+
+			break;
 		}
 	}
 

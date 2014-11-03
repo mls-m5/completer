@@ -90,4 +90,33 @@ TEST_CASE("class declaration"){
 	sourceTree.secondPass();
 	sourceTree.print(cout, 0);
 }
+
+TEST_CASE("paranthesis"){
+	stringstream ss("(int x)");
+	SourceTree st;
+	st.parse(ss);
+
+	st.print(cout, 0);
+	ASSERT_EQ(st.front().front().name, "int");
+
+}
+
+TEST_CASE("assignment"){
+	stringstream ss("int i = 0;");
+
+	SourceTree sourceTree;
+	sourceTree.parse(ss);
+	sourceTree.secondPass();
+	sourceTree.print(cout, 0);
+}
+
+TEST_CASE("multiple character operator"){
+	stringstream ss("+= ");
+	SourceTree sourceTree;
+	sourceTree.parse(ss);
+
+	ASSERT_EQ(sourceTree.front().name, "+=");
+	ASSERT_EQ(sourceTree.front().type, SourceTree::Operator);
+}
+
 TEST_SUIT_END

@@ -1,0 +1,88 @@
+/*
+ * preprocessing_op_or_punc.h
+ *
+ *  Created on: 1 nov 2014
+ *      Author: Mattias Larsson Sköld
+ */
+
+
+#pragma once
+
+#include <vector>
+#include <string>
+
+const std::vector<std::string> preprocessingOpOrPunc = {
+		"ignore this",
+		"{",
+		"}",
+		"[",
+		"<:",
+		":>",
+		"<%",
+		"new",
+		"delete",
+		"?",
+		"+",
+		"-",
+		"*",
+		"!",
+		"=",
+		"<",
+		"ˆ=",
+		"&=",
+		"|=",
+		"<=",
+		">=",
+		"&&",
+		"and",
+		"and_eq",
+		"bitand",
+		"or",
+		"or_eq",
+		"xor",
+		"of",
+		"]",
+		"%>",
+		"::",
+		"/",
+		">",
+		"<<",
+		"||",
+		"bitor",
+		"xor_eq",
+		"#",
+		"%:",
+		".",
+		"%",
+		"+=",
+		">>",
+		"++",
+		"compl",
+		"##",
+		"%:%:",
+		".*",
+		"ˆ",
+		"-=",
+		">>=",
+		"--",
+		"not",
+		"(",
+		";",
+		")",
+		":",
+		"...",
+		"&",
+		"*=",
+		"<<=",
+		",",
+		"not_eq",
+		"|",
+		"/=",
+		"==",
+		"->*",
+		"%=",
+		"!=",
+		"->",
+		"~",
+};
+

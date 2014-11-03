@@ -36,6 +36,47 @@ vector<string> controlStatements = {
 		"switch",
 };
 
+vector<string> multicharacterOperators = {
+		"<:",
+		":>",
+		"<%",
+		"ˆ=",
+		"&=",
+		"|=",
+		"<=",
+		">=",
+		"&&",
+//		and and_eq
+//		bitand
+//		or
+//		or_eq
+//		xor
+		"%>",
+		"::",
+		"<<",
+		"||",
+		"#",
+		"%:",
+		"+=",
+		">>",
+		"++",
+		"##",
+		"%:%:",
+		".*",
+		"-=",
+		">>=",
+		"--",
+		"...",
+		"*=",
+		"<<=",
+		"/=",
+		"==",
+		"->*",
+		"%=",
+		"!=",
+		"->",
+};
+
 map<string, SourceTree::DataType> nameInterpretations = {
 		{"if", SourceTree::ControlStatementKeyword},
 		{"while", SourceTree::ControlStatementKeyword},
@@ -44,7 +85,9 @@ map<string, SourceTree::DataType> nameInterpretations = {
 		{"class", SourceTree::ClassKeyword},
 		{"template", SourceTree::TemplateKeyword},
 		{"struct", SourceTree::StructKeyword},
-
+		{"return", SourceTree::ReturnKeyword},
+		{"new", SourceTree::NewKeyword},
+		{"delete", SourceTree::DeleteKeyword},
 
 		{"+", SourceTree::Operator},
 		{"++", SourceTree::Operator},
@@ -54,6 +97,16 @@ map<string, SourceTree::DataType> nameInterpretations = {
 		{";", SourceTree::Semicolon},
 		{"=", SourceTree::Equals},
 
+};
+
+map<SourceTree::DataType, string> typeNameStrings = {
+		{SourceTree::Equals, "equals"},
+		{SourceTree::Raw, "raw"},
+		{SourceTree::ClassKeyword, "class keyword"},
+		{SourceTree::Type, "type"},
+		{SourceTree::ControlStatementKeyword, "control statement keyword"},
+		{SourceTree::ReturnKeyword, "return keyword"},
+		{SourceTree::Operator, "operator"},
 };
 
 typedef const vector<SourceTree::DataType> patternType;
@@ -87,6 +140,11 @@ patternType anonymousClassDeclarationPattern = {
 		SourceTree::BraceBlock
 };
 
+patternType variableDeclarationAndAssignmentPattern = {
+		SourceTree::VariableDeclaration,
+		SourceTree::Equals,
+};
+
 
 std::map<patternType, SourceTree::DataType> patternInterpretations = {
 		{anonymousClassDeclarationPattern, SourceTree::ClassDeclaration},
@@ -94,6 +152,9 @@ std::map<patternType, SourceTree::DataType> patternInterpretations = {
 		{structDeclarationPattern, SourceTree::StructDeclaration},
 		{controlStatementPattern, SourceTree::ControlStatement},
 		{variableDeclarationPattern, SourceTree::VariableDeclaration},
+
+		{{SourceTree::VariableDeclaration, SourceTree::Equals}, //Probably another pattern in the future
+				SourceTree::AssignmentStatement}
 
 };
 
@@ -166,6 +227,11 @@ FilePosition SourceTree::parse(std::istream& stream, FilePosition fileIterator) 
 			push_back(SourceTree(token, ParanthesisBlock));
 			filePosition = back().parse(stream, filePosition);
 		}
+//		else if (token.type == Token::OperatorOrPunctuator){
+//			push_back(SourceTree());
+//			back().type = Operator;
+//			back().name = token;
+//		}
 		else if (type == BraceBlock and token == "}"){
 			cout << "end of scope" << endl;
 			break;
@@ -176,7 +242,7 @@ FilePosition SourceTree::parse(std::istream& stream, FilePosition fileIterator) 
 		}
 		else{
 			push_back(SourceTree());
-			back().type = Raw;
+			back().type = (token.type == Token::OperatorOrPunctuator)? Operator: Raw;
 			back().name = token;
 		}
 
@@ -223,18 +289,25 @@ void SourceTree::print(std::ostream& stream, int level) {
 		case ControlStatement:
 			stream << front().name;
 			break;
-//		case VariableDeclarationAndInitialization:
-//			stream << "declaration with initialization";
-//			break;
+		case AssignmentStatement:
+			stream << "assignment";
+			break;
 		case ClassDeclaration:
 			stream << "class";
+			break;
+		default:
+			stream << "type " << type;
 			break;
 		}
 
 		stream << endl;
 	}
 	intent(stream, level);
-	stream << name << endl;
+	stream << name;
+	if (auto f = typeNameStrings.find(type) != typeNameStrings.end()){
+		stream << " : " << typeNameStrings[type];
+	}
+	stream << endl;
 	for (auto &it: *this){
 		it.print(stream, level + 1);
 	}
@@ -270,6 +343,7 @@ void SourceTree::secondPass() {
 			it->secondPass();
 		}
 		if ((f = nameInterpretations.find(it->name)) != nameInterpretations.end()){
+			//eg interprets "=" to type Equals and so on
 			it->type = f->second;
 		}
 		else if (it->name.type == Token::Digit){
@@ -317,6 +391,11 @@ void SourceTree::secondPass() {
 				if (tryGroupExpressions(it, unprocessedExpressions,
 						pattern.first, pattern.second)){
 					cout << "grouped pattern " << pattern.second << endl;
+//					cout << "unprocessed expressions: " << endl;
+//					for (auto &it: unprocessedExpressions){
+//						it->print(cout, 0);
+//					}
+					break;
 				}
 			}
 		}
@@ -366,7 +445,7 @@ SourceTree::iterator SourceTree::groupExpressions(SourceTree::iterator last,
 	return groupExpressions(first, last);
 }
 
-bool SourceTree::tryGroupExpressions(iterator &it, std::vector<SourceTree*> unprocessedExpressions,
+bool SourceTree::tryGroupExpressions(iterator &it, std::vector<SourceTree*> &unprocessedExpressions,
 		const std::vector<DataType> &pattern, DataType resultingType) {
 	if (comparePattern(unprocessedExpressions, pattern)){
 		it = groupExpressions(it, pattern.size());

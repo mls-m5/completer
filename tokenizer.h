@@ -20,6 +20,7 @@ public:
 		Char,
 		StartScope,
 		SpacedOutCharacter,
+		OperatorOrPunctuator,
 		PreprocessorCommand,
 		None
 	};
