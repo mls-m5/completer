@@ -16,7 +16,7 @@ main/%.o: main/%.cpp *.h $(OBJECTS)
 	g++ $< -c -o $@ $(CFLAGS)
 
 $(BIN): main/main.o
-	g++ $< $(OBJECTS) -o $@ -I. -I../ $(CFLAGS)
+	g++ $< $(OBJECTS) -o $@ -I. $(CFLAGS)
 
 tests/%: tests/%.cpp *.cpp *.h
 	g++ $< $(OBJECTS) -o $@ -I. $(CFLAGS)
