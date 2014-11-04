@@ -57,6 +57,7 @@ public:
 		VariableDeclaration,
 //		VariableDeclarationAndInitialization,
 		FunctionDeclaration,
+		FunctionDefinition,
 		ControlStatementKeyword,
 		ControlStatement,
 		AssignmentStatement,

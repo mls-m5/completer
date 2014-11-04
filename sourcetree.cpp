@@ -122,7 +122,10 @@ std::map<patternType, SourceTree::DataType> patternInterpretations = {
 		{controlStatementPattern, SourceTree::ControlStatement},
 		{variableDeclarationPattern, SourceTree::VariableDeclaration},
 
-		{{SourceTree::VariableDeclaration, SourceTree::Equals}, //Probably another pattern in the future
+		{{
+				SourceTree::VariableDeclaration,
+				SourceTree::Equals
+		}, //Probably another pattern in the future
 				SourceTree::AssignmentStatement},
 
 		{{
@@ -130,7 +133,14 @@ std::map<patternType, SourceTree::DataType> patternInterpretations = {
 			SourceTree::ParanthesisBlock,
 		},
 			SourceTree::FunctionDeclaration
-		}
+		},
+
+		{{
+			SourceTree::FunctionDeclaration,
+			SourceTree::BraceBlock,
+		},
+			SourceTree::FunctionDefinition,
+		},
 };
 
 //For initializing stuff
@@ -298,7 +308,7 @@ void SourceTree::print(std::ostream& stream, int level) {
 			stream << "{}";
 			break;
 		case VariableDeclaration:
-			stream << "variable declaration";
+			stream << "variable definition";
 			break;
 		case ControlStatement:
 			stream << front().name;
@@ -314,6 +324,9 @@ void SourceTree::print(std::ostream& stream, int level) {
 			break;
 		case FunctionDeclaration:
 			stream << "function declaration";
+			break;
+		case FunctionDefinition:
+			stream << "function definition";
 			break;
 		default:
 			stream << "type " << type;
@@ -362,19 +375,21 @@ void SourceTree::secondPass() {
 		else if (it->name.type == Token::Digit){
 			it->type = Digit;
 		}
-		else if (findDataType(it->name)){
+		else if (auto tmpType = findDataType(it->name)){
 			cout << "datatype " << it->name << endl;
 			it->type = Type;
+			it->dataType = tmpType;
 
 			//Start chunking togther datatypes that consists of several words
 			auto jt = it;
 			++jt;
 			if (FindBasicType(it->name)){
 				while (jt != end()){
-					if (FindBasicType(jt->name)){
+					if (auto tmpType2 = FindBasicType(jt->name)){
 
 						it->name += (" " + jt->name);
 						cout << "multi word data type " << it->name << endl;
+						it->dataType = tmpType2;
 
 						jt = erase(jt);
 					}
@@ -383,7 +398,7 @@ void SourceTree::secondPass() {
 					}
 				}
 			}
-			it->dataType = findDataType(it->name);
+//			it->dataType = findDataType(it->name);
 
 			//Count pointer depth
 			while (jt != end() and jt->name == "*"){
