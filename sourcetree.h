@@ -56,6 +56,7 @@ public:
 
 		VariableDeclaration,
 //		VariableDeclarationAndInitialization,
+		FunctionDeclaration,
 		ControlStatementKeyword,
 		ControlStatement,
 		AssignmentStatement,
@@ -80,6 +81,7 @@ public:
 		BraceBlock,
 		BracketBlock,
 		ParanthesisBlock,
+		TemplateBlock,
 	};
 	SourceTree();
 	SourceTree(Token name, DataType type): name(name), type(type) {}

@@ -36,47 +36,6 @@ vector<string> controlStatements = {
 		"switch",
 };
 
-vector<string> multicharacterOperators = {
-		"<:",
-		":>",
-		"<%",
-		"ˆ=",
-		"&=",
-		"|=",
-		"<=",
-		">=",
-		"&&",
-//		and and_eq
-//		bitand
-//		or
-//		or_eq
-//		xor
-		"%>",
-		"::",
-		"<<",
-		"||",
-		"#",
-		"%:",
-		"+=",
-		">>",
-		"++",
-		"##",
-		"%:%:",
-		".*",
-		"-=",
-		">>=",
-		"--",
-		"...",
-		"*=",
-		"<<=",
-		"/=",
-		"==",
-		"->*",
-		"%=",
-		"!=",
-		"->",
-};
-
 map<string, SourceTree::DataType> nameInterpretations = {
 		{"if", SourceTree::ControlStatementKeyword},
 		{"while", SourceTree::ControlStatementKeyword},
@@ -149,13 +108,29 @@ patternType variableDeclarationAndAssignmentPattern = {
 std::map<patternType, SourceTree::DataType> patternInterpretations = {
 		{anonymousClassDeclarationPattern, SourceTree::ClassDeclaration},
 		{classDeclarationPattern, SourceTree::ClassDeclaration},
+		//Templated class
+		{{
+				SourceTree::TemplateBlock,
+				SourceTree::ClassKeyword,
+				SourceTree::Raw,
+				SourceTree::BraceBlock
+		},
+				SourceTree::ClassDeclaration
+		},
+
 		{structDeclarationPattern, SourceTree::StructDeclaration},
 		{controlStatementPattern, SourceTree::ControlStatement},
 		{variableDeclarationPattern, SourceTree::VariableDeclaration},
 
 		{{SourceTree::VariableDeclaration, SourceTree::Equals}, //Probably another pattern in the future
-				SourceTree::AssignmentStatement}
+				SourceTree::AssignmentStatement},
 
+		{{
+			SourceTree::VariableDeclaration,
+			SourceTree::ParanthesisBlock,
+		},
+			SourceTree::FunctionDeclaration
+		}
 };
 
 //For initializing stuff
@@ -203,6 +178,7 @@ FilePosition SourceTree::parse(std::istream& stream, FilePosition fileIterator) 
 	FilePosition filePosition = fileIterator;
 
 	auto token = Tokenizer::GetNextToken(stream);
+	bool templateBrackets;
 	filePosition += token;
 	while (token.type != Token::None){
 //		cout << "(" << filePosition.line << ":" << filePosition.column << ") " << token << endl;
@@ -227,6 +203,23 @@ FilePosition SourceTree::parse(std::istream& stream, FilePosition fileIterator) 
 			push_back(SourceTree(token, ParanthesisBlock));
 			filePosition = back().parse(stream, filePosition);
 		}
+		else if (token.type == Token::KeyWord and token == "template"){
+			token = Tokenizer::GetNextToken(stream);
+			filePosition += token;
+			if (token.type == Token::Space){
+				token = Tokenizer::GetNextToken(stream);
+				filePosition += token;
+			}
+			if (token == "<"){
+				cout << "new template block" << endl;
+				push_back(SourceTree(token, TemplateBlock));
+				filePosition = back().parse(stream, filePosition);
+			}
+			else {
+				cout << "expected '<'" << endl;
+				break;
+			}
+		}
 //		else if (token.type == Token::OperatorOrPunctuator){
 //			push_back(SourceTree());
 //			back().type = Operator;
@@ -238,6 +231,15 @@ FilePosition SourceTree::parse(std::istream& stream, FilePosition fileIterator) 
 		}
 		else if (type == ParanthesisBlock and token == ")"){
 			cout << "end of scope" << endl;
+			break;
+		}
+		else if (type == TemplateBlock and token == ">"){
+			cout << "end of template" << endl;
+			break;
+		}
+		else if (type == TemplateBlock and token == ">>"){
+			stream.unget();
+			cout << "end of template double >>" << endl;
 			break;
 		}
 		else{
@@ -272,9 +274,21 @@ void intent(ostream & stream, int level){
 }
 
 void SourceTree::print(std::ostream& stream, int level) {
+
+	intent(stream, level);
+	if (name.empty()){
+		stream << "-";
+	}
+	else {
+		stream << name;
+	}
+
+	if (auto f = typeNameStrings.find(type) != typeNameStrings.end()){
+		stream << " : " << typeNameStrings[type];
+	}
 	if (size()){
-		intent(stream, level);
-		stream << "start group ";
+//		intent(stream, level);
+		stream << " : start group ";
 
 		switch (type){
 		case ParanthesisBlock:
@@ -295,17 +309,16 @@ void SourceTree::print(std::ostream& stream, int level) {
 		case ClassDeclaration:
 			stream << "class";
 			break;
+		case TemplateBlock:
+			stream << "template";
+			break;
+		case FunctionDeclaration:
+			stream << "function declaration";
+			break;
 		default:
 			stream << "type " << type;
 			break;
 		}
-
-		stream << endl;
-	}
-	intent(stream, level);
-	stream << name;
-	if (auto f = typeNameStrings.find(type) != typeNameStrings.end()){
-		stream << " : " << typeNameStrings[type];
 	}
 	stream << endl;
 	for (auto &it: *this){
@@ -313,7 +326,7 @@ void SourceTree::print(std::ostream& stream, int level) {
 	}
 	if (size()){
 		intent(stream, level);
-		stream << "end group" << endl;
+		stream << "end group" << endl << endl;
 	}
 }
 
@@ -379,7 +392,13 @@ void SourceTree::secondPass() {
 			}
 		}
 
-		unprocessedExpressions.push_back(&*it);
+		//Load in templates in beginning of statement
+//		if (unprocessedExpressions.empty() and it->type == TemplateBlock){
+//			cout << "template block... do something with this" << endl;
+//		}
+//		else{
+			unprocessedExpressions.push_back(&*it);
+//		}
 
 		if (it->type == Semicolon or it->type == Coma){
 			//Todo: Handle this
@@ -391,10 +410,6 @@ void SourceTree::secondPass() {
 				if (tryGroupExpressions(it, unprocessedExpressions,
 						pattern.first, pattern.second)){
 					cout << "grouped pattern " << pattern.second << endl;
-//					cout << "unprocessed expressions: " << endl;
-//					for (auto &it: unprocessedExpressions){
-//						it->print(cout, 0);
-//					}
 					break;
 				}
 			}

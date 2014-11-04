@@ -82,13 +82,15 @@ TEST_CASE("multiple word datatypes"){
 }
 
 TEST_CASE("class declaration"){
-	stringstream ss("class apa { int x; };");
+	stringstream ss("template <class T> class apa { int x; };");
 
-	SourceTree sourceTree;
-	sourceTree.parse(ss);
-	sourceTree.type = SourceTree::BraceBlock;
-	sourceTree.secondPass();
-	sourceTree.print(cout, 0);
+	SourceTree st;
+	st.parse(ss);
+	st.type = SourceTree::BraceBlock;
+	st.secondPass();
+	st.print(cout, 0);
+
+	ASSERT_EQ(st.front().type, SourceTree::ClassDeclaration);
 }
 
 TEST_CASE("paranthesis"){
@@ -101,6 +103,15 @@ TEST_CASE("paranthesis"){
 
 }
 
+TEST_CASE("functions"){
+	stringstream ss("int main(int x) {return x;}");
+	SourceTree st;
+	st.parse(ss);
+	st.secondPass();
+
+	st.print(cout, 0);
+}
+
 TEST_CASE("assignment"){
 	stringstream ss("int i = 0;");
 
@@ -108,6 +119,16 @@ TEST_CASE("assignment"){
 	sourceTree.parse(ss);
 	sourceTree.secondPass();
 	sourceTree.print(cout, 0);
+}
+
+TEST_CASE("templates"){
+	stringstream ss("template <class T> int apa(T bepa);");
+
+	SourceTree st;
+	st.parse(ss);
+
+	st.secondPass();
+	st.print(cout, 0);
 }
 
 TEST_CASE("multiple character operator"){
