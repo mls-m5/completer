@@ -58,7 +58,7 @@ map<string, SourceTree::DataType> nameInterpretations = {
 
 };
 
-map<SourceTree::DataType, string> typeNameStrings = {
+const map<SourceTree::DataType, string> typeNameStrings = {
 		{SourceTree::Equals, "equals"},
 		{SourceTree::Raw, "raw"},
 		{SourceTree::ClassKeyword, "class keyword"},
@@ -66,31 +66,15 @@ map<SourceTree::DataType, string> typeNameStrings = {
 		{SourceTree::ControlStatementKeyword, "control statement keyword"},
 		{SourceTree::ReturnKeyword, "return keyword"},
 		{SourceTree::Operator, "operator"},
+		{SourceTree::DeclarationName, "declaration name"},
+		{SourceTree::DefinitionName, "name"},
 };
 
 typedef const vector<SourceTree::DataType> patternType;
 
-patternType variableDeclarationPattern = {
-		SourceTree::Type,
-		SourceTree::Raw,
-//		SourceTree::Semicolon
-};
-
 patternType controlStatementPattern = {
 		SourceTree::ControlStatementKeyword,
 		SourceTree::ParanthesisBlock,
-		SourceTree::BraceBlock
-};
-
-patternType classDeclarationPattern = {
-		SourceTree::ClassKeyword,
-		SourceTree::Raw,
-		SourceTree::BraceBlock
-};
-
-patternType structDeclarationPattern = {
-		SourceTree::StructKeyword,
-		SourceTree::Raw,
 		SourceTree::BraceBlock
 };
 
@@ -104,10 +88,39 @@ patternType variableDeclarationAndAssignmentPattern = {
 		SourceTree::Equals,
 };
 
+struct replacementRule {
+	patternType first;
+	SourceTree::DataType second;
+	patternType replacementPattern;
+};
 
-std::map<patternType, SourceTree::DataType> patternInterpretations = {
+std::vector<replacementRule> patternInterpretations = {
+		{{
+
+				SourceTree::Type,
+				SourceTree::Raw,
+		},
+				SourceTree::VariableDeclaration,
+				{
+						SourceTree::Type,
+						SourceTree::DefinitionName
+				}
+		},
+
 		{anonymousClassDeclarationPattern, SourceTree::ClassDeclaration},
-		{classDeclarationPattern, SourceTree::ClassDeclaration},
+		{{
+
+				SourceTree::ClassKeyword,
+				SourceTree::Raw,
+				SourceTree::BraceBlock
+		},
+				SourceTree::ClassDeclaration,
+				{
+						SourceTree::ClassKeyword,
+						SourceTree::DeclarationName,
+						SourceTree::BraceBlock
+				}
+		},
 		//Templated class
 		{{
 				SourceTree::TemplateBlock,
@@ -115,12 +128,46 @@ std::map<patternType, SourceTree::DataType> patternInterpretations = {
 				SourceTree::Raw,
 				SourceTree::BraceBlock
 		},
-				SourceTree::ClassDeclaration
+				SourceTree::ClassDeclaration,
+				{
+						SourceTree::TemplateBlock,
+						SourceTree::ClassKeyword,
+						SourceTree::DeclarationName,
+						SourceTree::BraceBlock,
+				}
 		},
 
-		{structDeclarationPattern, SourceTree::StructDeclaration},
+		{{
+
+				SourceTree::StructKeyword,
+				SourceTree::Raw,
+				SourceTree::BraceBlock
+		},
+				SourceTree::StructDeclaration,
+				{
+						SourceTree::StructKeyword,
+						SourceTree::DeclarationName,
+						SourceTree::BraceBlock
+				}
+		},
+
+		//Templated struct
+		{{
+				SourceTree::TemplateBlock,
+				SourceTree::StructKeyword,
+				SourceTree::Raw,
+				SourceTree::BraceBlock
+		},
+				SourceTree::StructDeclaration,
+				{
+						SourceTree::TemplateBlock,
+						SourceTree::StructKeyword,
+						SourceTree::DeclarationName,
+						SourceTree::BraceBlock
+				}
+		},
+
 		{controlStatementPattern, SourceTree::ControlStatement},
-		{variableDeclarationPattern, SourceTree::VariableDeclaration},
 
 		{{
 				SourceTree::VariableDeclaration,
@@ -150,7 +197,7 @@ public:
 		if (!basicTypes.size()){
 			for (auto &it: basicTypeNames){
 				auto typeAst = new SourceTree;
-				typeAst->type = SourceTree::BasicType;
+				typeAst->type = SourceTree::Type;
 				typeAst->name = it;
 				basicTypes.push_back(typeAst);
 			}
@@ -294,7 +341,7 @@ void SourceTree::print(std::ostream& stream, int level) {
 	}
 
 	if (auto f = typeNameStrings.find(type) != typeNameStrings.end()){
-		stream << " : " << typeNameStrings[type];
+		stream << " : " << typeNameStrings.at(type);
 	}
 	if (size()){
 //		intent(stream, level);
@@ -318,6 +365,9 @@ void SourceTree::print(std::ostream& stream, int level) {
 			break;
 		case ClassDeclaration:
 			stream << "class";
+			break;
+		case StructDeclaration:
+			stream << "struct";
 			break;
 		case TemplateBlock:
 			stream << "template";
@@ -375,6 +425,11 @@ void SourceTree::secondPass() {
 		else if (it->name.type == Token::Digit){
 			it->type = Digit;
 		}
+		else if (it->name.type == Token::PreprocessorCommand){
+			cout << "skipping preprocessor command" << endl;
+			it = erase(it);
+			continue;
+		}
 		else if (auto tmpType = findDataType(it->name)){
 			cout << "datatype " << it->name << endl;
 			it->type = Type;
@@ -423,7 +478,7 @@ void SourceTree::secondPass() {
 		else {
 			for (auto &pattern: patternInterpretations){
 				if (tryGroupExpressions(it, unprocessedExpressions,
-						pattern.first, pattern.second)){
+						pattern.first, pattern.second, pattern.replacementPattern)){
 					cout << "grouped pattern " << pattern.second << endl;
 					break;
 				}
@@ -476,9 +531,17 @@ SourceTree::iterator SourceTree::groupExpressions(SourceTree::iterator last,
 }
 
 bool SourceTree::tryGroupExpressions(iterator &it, std::vector<SourceTree*> &unprocessedExpressions,
-		const std::vector<DataType> &pattern, DataType resultingType) {
+		const std::vector<DataType> &pattern, DataType resultingType, const std::vector<DataType> &replacementPattern) {
 	if (comparePattern(unprocessedExpressions, pattern)){
 		it = groupExpressions(it, pattern.size());
+		if (pattern.size() == replacementPattern.size()){
+			//Replace the identifier pattern with a new one
+			//For example interprets which fields are name fields etc
+			auto replacementIterator = replacementPattern.begin();
+			for (auto jt = it->begin(); jt != it->end(); ++jt, ++replacementIterator){
+				jt->type = *replacementIterator;
+			}
+		}
 		it->type = resultingType;
 		unprocessedExpressions.clear();
 		unprocessedExpressions.push_back(&*it);

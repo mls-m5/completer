@@ -48,9 +48,29 @@ TEST_CASE("basic data type"){
 
 	ASSERT(sourceTree.front().front().dataType, "ingen content (innehåll)");
 
-//	ASSERT_EQ(sourceTree.front().content->type, SourceContent::DataType);
+	ASSERT_EQ(sourceTree.front().size(), 2);
+	ASSERT_EQ(sourceTree.front().front().type, SourceTree::Type);
+	ASSERT_EQ(sourceTree.front().back().type, SourceTree::DefinitionName);
 
 	return 1;
+}
+
+TEST_CASE("user defined datatype"){
+	stringstream ss("class Apa { int x }; Apa apa;");
+	SourceTree st;
+	st.parse(ss);
+	st.secondPass();
+	st.print(cout, 0);
+
+	ASSERT(0, "not implemented");
+}
+
+TEST_CASE("preprocessor command"){
+	stringstream ss("#pragma once \n int apa; ");
+	SourceTree st;
+	st.parse(ss);
+	st.secondPass();
+	st.print(cout, 0);
 }
 
 TEST_CASE("lambda functions"){
@@ -68,7 +88,7 @@ TEST_CASE("multiple word datatypes"){
 	SourceTree sourceTree;
 	sourceTree.parse(ss);
 
-	sourceTree.print(cout, 0);
+//	sourceTree.print(cout, 0);
 	sourceTree.secondPass();
 	sourceTree.print(cout, 0);
 
@@ -96,12 +116,24 @@ TEST_CASE("class declaration"){
 
 	SourceTree st;
 	st.parse(ss);
-	st.type = SourceTree::BraceBlock;
 	st.secondPass();
 	st.print(cout, 0);
 
 	ASSERT_EQ(st.front().type, SourceTree::ClassDeclaration);
 }
+
+
+TEST_CASE("struct declaration"){
+	stringstream ss("template <class T> struct apa { int x; };");
+
+	SourceTree st;
+	st.parse(ss);
+	st.secondPass();
+	st.print(cout, 0);
+
+	ASSERT_EQ(st.front().type, SourceTree::StructDeclaration);
+}
+
 
 TEST_CASE("paranthesis"){
 	stringstream ss("(int x)");

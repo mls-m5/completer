@@ -46,7 +46,6 @@ public:
 class SourceTree: public std::list<SourceTree> {
 public:
 	enum DataType{
-		BasicType,
 		Type,
 		Digit,
 		UnqualifiedId,
@@ -55,6 +54,8 @@ public:
 		Raw,
 
 		VariableDeclaration,
+		DefinitionName,
+		DeclarationName,
 //		VariableDeclarationAndInitialization,
 		FunctionDeclaration,
 		FunctionDefinition,
@@ -94,7 +95,7 @@ public:
 	SourceTree::iterator groupExpressions(SourceTree::iterator first, SourceTree::iterator last);
 
 	bool tryGroupExpressions(iterator &it, std::vector<SourceTree*> &unprocessedExpressions,
-			const std::vector<DataType> &pattern, DataType resultingType);
+			const std::vector<DataType> &pattern, DataType resultingType, const std::vector<DataType> &replacementPattern);
 
 	void print(std::ostream &stream, int level);
 
@@ -103,7 +104,7 @@ public:
 
 	Token name = Token("", Token::None);
 	std::shared_ptr<SourceContent> content = 0;
-	DataType type = BasicType;
+	DataType type = Type;
 	SourceTree* dataType = 0;
 	int pointerDepth = 0;
 };
