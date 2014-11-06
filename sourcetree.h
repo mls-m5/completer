@@ -59,6 +59,7 @@ public:
 //		VariableDeclarationAndInitialization,
 		FunctionDeclaration,
 		FunctionDefinition,
+		LambdaFunction,
 		ControlStatementKeyword,
 		ControlStatement,
 		AssignmentStatement,

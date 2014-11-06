@@ -96,7 +96,6 @@ struct replacementRule {
 
 std::vector<replacementRule> patternInterpretations = {
 		{{
-
 				SourceTree::Type,
 				SourceTree::Raw,
 		},
@@ -188,6 +187,15 @@ std::vector<replacementRule> patternInterpretations = {
 		},
 			SourceTree::FunctionDefinition,
 		},
+
+
+		{{
+			SourceTree::BracketBlock, //Todo make sure this is identified even when it is not at an end of a line
+			SourceTree::ParanthesisBlock,
+			SourceTree::BraceBlock,
+		},
+			SourceTree::LambdaFunction,
+		},
 };
 
 //For initializing stuff
@@ -260,6 +268,11 @@ FilePosition SourceTree::parse(std::istream& stream, FilePosition fileIterator) 
 			push_back(SourceTree(token, ParanthesisBlock));
 			filePosition = back().parse(stream, filePosition);
 		}
+		else if (token == "["){
+			cout << "new bracket block" << endl;
+			push_back(SourceTree(token, BracketBlock));
+			filePosition = back().parse(stream, filePosition);
+		}
 		else if (token.type == Token::KeyWord and token == "template"){
 			token = Tokenizer::GetNextToken(stream);
 			filePosition += token;
@@ -277,17 +290,16 @@ FilePosition SourceTree::parse(std::istream& stream, FilePosition fileIterator) 
 				break;
 			}
 		}
-//		else if (token.type == Token::OperatorOrPunctuator){
-//			push_back(SourceTree());
-//			back().type = Operator;
-//			back().name = token;
-//		}
 		else if (type == BraceBlock and token == "}"){
 			cout << "end of scope" << endl;
 			break;
 		}
 		else if (type == ParanthesisBlock and token == ")"){
 			cout << "end of scope" << endl;
+			break;
+		}
+		else if (type == BracketBlock and token == "]"){
+			cout << "end of brackets" << endl;
 			break;
 		}
 		else if (type == TemplateBlock and token == ">"){
@@ -354,6 +366,9 @@ void SourceTree::print(std::ostream& stream, int level) {
 		case BraceBlock:
 			stream << "{}";
 			break;
+		case BracketBlock:
+			stream << "[]";
+			break;
 		case VariableDeclaration:
 			stream << "variable definition";
 			break;
@@ -377,6 +392,9 @@ void SourceTree::print(std::ostream& stream, int level) {
 			break;
 		case FunctionDefinition:
 			stream << "function definition";
+			break;
+		case LambdaFunction:
+			stream << "lambda function";
 			break;
 		default:
 			stream << "type " << type;

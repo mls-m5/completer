@@ -74,12 +74,23 @@ TEST_CASE("preprocessor command"){
 }
 
 TEST_CASE("lambda functions"){
-	stringstream ss("auto f = [] (int x) {cout << \"hej\" << endl; } ");
-	SourceTree st;
-	st.parse(ss);
+	{
+		stringstream ss("[] (int x) {cout << \"hej\" << endl; } ");
+		SourceTree st;
+		st.parse(ss);
 
-	st.secondPass();
-	st.print(cout, 0);
+		st.secondPass();
+		st.print(cout, 0);
+		ASSERT_EQ(st.front().type, SourceTree::LambdaFunction);
+	}
+	{
+		stringstream ss("auto f = [] (int x) {cout << \"hej\" << endl; }; ");
+		SourceTree st;
+		st.parse(ss);
+
+		st.secondPass();
+		st.print(cout, 0);
+	}
 }
 
 TEST_CASE("multiple word datatypes"){
