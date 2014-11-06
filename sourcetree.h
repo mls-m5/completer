@@ -65,7 +65,7 @@ public:
 		AssignmentStatement,
 
 		Semicolon,
-		Coma,
+		ComaOperator,
 		Equals,
 		Operator,
 

@@ -19,9 +19,7 @@ TEST_CASE("parse spaces"){
 
 	auto ret = Tokenizer::GetNextToken(ss);
 
-	ASSERT(ret.compare("     \t") == 0, "not expected token");
-
-	return 0;
+	ASSERT_EQ(ret, "     \t");
 }
 
 TEST_CASE("multicharacter operator"){
@@ -83,8 +81,6 @@ TEST_CASE("parse string"){
 
 
 	ASSERT_EQ(ret, testString);
-
-	return 0;
 }
 
 TEST_CASE("parse special character"){
@@ -95,8 +91,6 @@ TEST_CASE("parse special character"){
 		ASSERT_EQ(ret.size(), 1);
 		ASSERT_EQ(ret.type, Token::OperatorOrPunctuator);
 	}
-
-	return 0;
 }
 
 TEST_CASE("preprocessor command"){

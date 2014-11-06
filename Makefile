@@ -1,4 +1,5 @@
 SRC=$(wildcard *.cpp)
+CXX=clang++
 OBJECTS=$(SRC:.cpp=.o)
 
 TEST_SRC=$(wildcard tests/*.cpp)
@@ -10,15 +11,18 @@ all: $(OBJECTS) $(TEST_BIN) $(BIN)
 	@echo Klart
 	
 %.o: %.cpp *.h
-	g++ $< -c -o $@ $(CFLAGS)
+	$(CXX) $< -c -o $@ $(CFLAGS)
 	
 main/%.o: main/%.cpp *.h $(OBJECTS)
-	g++ $< -c -o $@ $(CFLAGS)
+	$(CXX) $< -c -o $@ $(CFLAGS)
 
 $(BIN): main/main.o
-	g++ $< $(OBJECTS) -o $@ -I. $(CFLAGS)
+	$(CXX) $< $(OBJECTS) -o $@ -I. $(CFLAGS)
 
 tests/%: tests/%.cpp *.cpp *.h
-	g++ $< $(OBJECTS) -o $@ -I. $(CFLAGS)
+	$(CXX) $< $(OBJECTS) -o $@ -I. $(CFLAGS)
+	
+clean:
+	rm -f $(OBJECTS) $(BIN) $(TEST_BIN) main/main.o
 
 

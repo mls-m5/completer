@@ -51,8 +51,6 @@ TEST_CASE("basic data type"){
 	ASSERT_EQ(sourceTree.front().size(), 2);
 	ASSERT_EQ(sourceTree.front().front().type, SourceTree::Type);
 	ASSERT_EQ(sourceTree.front().back().type, SourceTree::DefinitionName);
-
-	return 1;
 }
 
 TEST_CASE("user defined datatype"){

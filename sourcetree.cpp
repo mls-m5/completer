@@ -52,7 +52,7 @@ map<string, SourceTree::DataType> nameInterpretations = {
 		{"++", SourceTree::Operator},
 		{"-", SourceTree::Operator},
 		{"--", SourceTree::Operator},
-		{",", SourceTree::Coma},
+		{",", SourceTree::ComaOperator},
 		{";", SourceTree::Semicolon},
 		{"=", SourceTree::Equals},
 
@@ -256,7 +256,7 @@ FilePosition SourceTree::parse(std::istream& stream, FilePosition fileIterator) 
 			push_back(SourceTree(token, Semicolon));
 		}
 		else if (token == ","){
-			push_back(SourceTree(token, Coma));
+			push_back(SourceTree(token, ComaOperator));
 		}
 		else if (token == "{"){
 			push_back(SourceTree(token, BraceBlock));
@@ -488,7 +488,7 @@ void SourceTree::secondPass() {
 			unprocessedExpressions.push_back(&*it);
 //		}
 
-		if (it->type == Semicolon or it->type == Coma){
+		if (it->type == Semicolon or it->type == ComaOperator){
 			//Todo: Handle this
 			unprocessedExpressions.clear();
 			cout << "end of statement" << endl;
