@@ -24,9 +24,34 @@ Progress - Appendix..
 
 This is part of the current test output
 
-
 ==== Starts test suit tests/sourcetree-test.cpp ====
 
+--- running test assignment ---
+datatype int
+grouped pattern 6
+grouped pattern 14
+end of statement
+- : type : start group type 0
+    - : start group assignment
+        - (i) : start group variable definition
+            int (i) : type
+            i (i) : name
+        end group
+
+        = : equals
+    end group
+
+    0
+    ;
+end group
+
+ --> success 
+
+--- running test basic data type ---
+datatype int
+grouped pattern 6
+end of statement
+ --> success 
 
 --- running test class declaration ---
 new template block
@@ -34,26 +59,26 @@ end of template
 new braceblock
 end of scope
 datatype int
-grouped pattern 7
+grouped pattern 6
 end of statement
-grouped pattern 18
+grouped pattern 21
 end of statement
-- : start group {}
-    - : start group class
-        < : start group template
-            class : class keyword
-            T : raw
+- : type : start group type 0
+    - (Apa) : start group class
+        < (Apa) : start group template
+            class (Apa) : class keyword
+            T (Apa) : raw
         end group
 
-        class : class keyword
-        apa : raw
-        { : start group {}
-            - : start group variable declaration
-                int : type
-                x : raw
+        class (Apa) : class keyword
+        Apa (Apa) : declaration name
+        { (Apa) : start group {}
+            - (Apa::x) : start group variable definition
+                int (Apa::x) : type
+                x (Apa::x) : name
             end group
 
-            ;
+            ; (Apa)
         end group
 
     end group
@@ -68,7 +93,7 @@ new paranthesis block
 end of scope
 new braceblock
 end of scope
-- : start group type 0
+- : type : start group type 0
     int : raw
     main : raw
     ( : start group ()
@@ -97,57 +122,29 @@ end group
 
  --> success 
 
---- running test functions ---
+--- running test for ---
 new paranthesis block
 end of scope
 new braceblock
 end of scope
 datatype int
-grouped pattern 7
-datatype int
-grouped pattern 7
-grouped pattern 8
+grouped pattern 6
+grouped pattern 14
 end of statement
-- : start group type 0
-    - : start group function declaration
-        - : start group variable declaration
-            int : type
-            main : raw
-        end group
-
-        ( : start group ()
-            - : start group variable declaration
-                int : type
-                x : raw
-            end group
-
-        end group
-
-    end group
-
-    { : start group {}
-        return : return keyword
-        x : raw
-        ;
-    end group
-
-end group
-
- --> success 
-
---- running test multiple character operator ---
- --> success 
-
---- running test multiple word datatypes ---
-grouped pattern 10
+end of statement
+datatype int
+grouped pattern 6
+grouped pattern 14
+end of statement
+grouped pattern 13
 - : start group {}
     - : start group for
         for : control statement keyword
         ( : start group ()
             - : start group assignment
-                - : start group variable declaration
-                    int : type
-                    i : raw
+                - (i) : start group variable definition
+                    int (i) : type
+                    i (i) : name
                 end group
 
                 = : equals
@@ -165,9 +162,9 @@ grouped pattern 10
 
         { : start group {}
             - : start group assignment
-                - : start group variable declaration
-                    int : type
-                    x : raw
+                - (x) : start group variable definition
+                    int (x) : type
+                    x (x) : name
                 end group
 
                 = : equals
@@ -183,15 +180,173 @@ end group
 
  --> success 
 
+--- running test functions ---
+new paranthesis block
+end of scope
+new braceblock
+end of scope
+datatype int
+grouped pattern 6
+datatype int
+grouped pattern 6
+grouped pattern 9
+end of statement
+grouped pattern 10
+- : type : start group type 0
+    - : start group function definition
+        - : start group function declaration
+            - (main) : start group variable definition
+                int (main) : type
+                main (main) : name
+            end group
+
+            ( : start group ()
+                - (x) : start group variable definition
+                    int (x) : type
+                    x (x) : name
+                end group
+
+            end group
+
+        end group
+
+        { : start group {}
+            return : return keyword
+            x : raw
+            ;
+        end group
+
+    end group
+
+end group
+
+ --> success 
+
+--- running test lambda functions ---
+new bracket block
+end of brackets
+new paranthesis block
+end of scope
+new braceblock
+end of scope
+datatype int
+grouped pattern 6
+end of statement
+grouped pattern 11
+- : type : start group type 0
+    - : start group lambda function
+        [
+        ( : start group ()
+            - (x) : start group variable definition
+                int (x) : type
+                x (x) : name
+            end group
+
+        end group
+
+        { : start group {}
+            cout : raw
+            << : operator
+            "hej" : raw
+            << : operator
+            endl : raw
+            ;
+        end group
+
+    end group
+
+end group
+
+new bracket block
+end of brackets
+new paranthesis block
+end of scope
+new braceblock
+end of scope
+datatype auto
+grouped pattern 6
+grouped pattern 14
+datatype int
+grouped pattern 6
+end of statement
+end of statement
+- : type : start group type 0
+    - : start group assignment
+        - (f) : start group variable definition
+            auto (f) : type
+            f (f) : name
+        end group
+
+        = : equals
+    end group
+
+    [
+    ( : start group ()
+        - (x) : start group variable definition
+            int (x) : type
+            x (x) : name
+        end group
+
+    end group
+
+    { : start group {}
+        cout : raw
+        << : operator
+        "hej" : raw
+        << : operator
+        endl : raw
+        ;
+    end group
+
+    ;
+end group
+
+ --> success 
+
+--- running test multiple character operator ---
+ --> success 
+
+--- running test multiple word datatypes ---
+datatype long
+multi word data type long int
+grouped pattern 6
+end of statement
+- : type : start group type 0
+    - (apa) : start group variable definition
+        long int (apa) : type
+        apa (apa) : name
+    end group
+
+    ;
+end group
+
+ --> success 
+
 --- running test paranthesis ---
 new paranthesis block
 end of scope
-- : start group type 0
+- : type : start group type 0
     ( : start group ()
         int : raw
         x : raw
     end group
 
+end group
+
+ --> success 
+
+--- running test preprocessor command ---
+skipping preprocessor command
+datatype int
+grouped pattern 6
+end of statement
+- : type : start group type 0
+    - (apa) : start group variable definition
+        int (apa) : type
+        apa (apa) : name
+    end group
+
+    ;
 end group
 
  --> success 
@@ -202,59 +357,52 @@ end of scope
 new braceblock
 end of scope
 datatype int
-grouped pattern 7
+grouped pattern 6
 datatype int
-grouped pattern 7
+grouped pattern 6
 end of statement
 datatype char
-grouped pattern 7
-grouped pattern 8
+grouped pattern 6
+grouped pattern 9
 datatype int
-grouped pattern 7
+grouped pattern 6
 end of statement
 end of statement
 end of statement
-- : start group type 0
-    - : start group function declaration
-        - : start group variable declaration
-            int : type
-            main : raw
+grouped pattern 10
+ --> success 
+
+--- running test struct declaration ---
+new template block
+end of template
+new braceblock
+end of scope
+datatype int
+grouped pattern 6
+end of statement
+grouped pattern 23
+end of statement
+- : type : start group type 0
+    - (apa) : start group struct
+        < (apa) : start group template
+            class (apa) : class keyword
+            T (apa) : raw
         end group
 
-        ( : start group ()
-            - : start group variable declaration
-                int : type
-                argc : raw
+        struct (apa)
+        apa (apa) : declaration name
+        { (apa) : start group {}
+            - (apa::x) : start group variable definition
+                int (apa::x) : type
+                x (apa::x) : name
             end group
 
-            ,
-            - : start group variable declaration
-                char : type
-                argv : raw
-            end group
-
+            ; (apa)
         end group
 
     end group
 
-    { : start group {}
-        - : start group variable declaration
-            int : type
-            x : raw
-        end group
-
-        ;
-        cout : raw
-        << : operator
-        "hello world" : raw
-        << : operator
-        endl : raw
-        ;
-        return : return keyword
-        0
-        ;
-    end group
-
+    ;
 end group
 
  --> success 
@@ -266,7 +414,7 @@ new paranthesis block
 end of scope
 datatype int
 end of statement
-- : start group type 0
+- : type : start group type 0
     < : start group template
         class : class keyword
         T : raw
@@ -284,4 +432,38 @@ end group
 
  --> success 
 
+--- running test user defined datatype ---
+new braceblock
+end of scope
+datatype int
+grouped pattern 6
+grouped pattern 21
+end of statement
+end of statement
+- : type : start group type 0
+    - (Apa) : start group class
+        class (Apa) : class keyword
+        Apa (Apa) : declaration name
+        { (Apa) : start group {}
+            - (Apa::x) : start group variable definition
+                int (Apa::x) : type
+                x (Apa::x) : name
+            end group
+
+        end group
+
+    end group
+
+    ;
+    Apa : raw
+    apa : raw
+    ;
+end group
+
+tests/sourcetree-test.cpp:63: 0: not implemented
+ --> failed
+
+
+MISSLYCKADES
+Failed: 1 Succeded: 14
 

@@ -99,6 +99,9 @@ public:
 			const std::vector<DataType> &pattern, DataType resultingType, const std::vector<DataType> &replacementPattern);
 
 	void print(std::ostream &stream, int level);
+	std::string getFullName();
+	std::string getLocalName();
+	void setParent(SourceTree *parent);
 
 	SourceTree *findDataType(std::string &name);
 	static SourceTree *FindBasicType(std::string &name);
@@ -108,5 +111,7 @@ public:
 	DataType type = Type;
 	SourceTree* dataType = 0;
 	int pointerDepth = 0;
+	bool hidden = false;
+	SourceTree *parent = 0;
 };
 

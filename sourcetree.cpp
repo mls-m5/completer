@@ -129,6 +129,10 @@ std::vector<replacementRule> patternInterpretations = {
 		},
 				SourceTree::ClassDeclaration,
 				{
+//						SourceTree::TemplateBlock,
+//						SourceTree::ClassKeyword,
+//						SourceTree::DeclarationName,
+//						SourceTree::BraceBlock,
 						SourceTree::TemplateBlock,
 						SourceTree::ClassKeyword,
 						SourceTree::DeclarationName,
@@ -312,9 +316,8 @@ FilePosition SourceTree::parse(std::istream& stream, FilePosition fileIterator) 
 			break;
 		}
 		else{
-			push_back(SourceTree());
-			back().type = (token.type == Token::OperatorOrPunctuator)? Operator: Raw;
-			back().name = token;
+			push_back(SourceTree(token,
+					 (token.type == Token::OperatorOrPunctuator)? Operator: Raw));
 		}
 
 		token = Tokenizer::GetNextToken(stream);
@@ -351,6 +354,11 @@ void SourceTree::print(std::ostream& stream, int level) {
 	else {
 		stream << name;
 	}
+	auto fullName = getFullName();
+	if (!fullName.empty()){
+		stream << " (" << fullName << ")";
+	}
+
 
 	if (auto f = typeNameStrings.find(type) != typeNameStrings.end()){
 		stream << " : " << typeNameStrings.at(type);
@@ -532,10 +540,14 @@ SourceTree::iterator SourceTree::groupExpressions(SourceTree::iterator first, So
 	SourceTree st;
 	++last; //last is not included by default
 	st.insert(st.begin(), first, last);
+
 	insert(first, st);
 	auto ret = first;
 	--ret;
 	erase(first, last);
+
+	ret->setParent(this);
+
 	return ret;
 }
 
@@ -568,6 +580,41 @@ bool SourceTree::tryGroupExpressions(iterator &it, std::vector<SourceTree*> &unp
 	return false;
 }
 
+std::string SourceTree::getFullName() {
+	if (not parent) {
+		return getLocalName();
+	}
+	auto parentName = parent->getFullName();
+	if (parentName.empty()){
+		return getLocalName();
+	}
+	else{
+		auto localName = getLocalName();
+		if (localName.empty()){
+			return parentName;
+		}
+		else {
+			return parentName + "::" + getLocalName();
+		}
+	}
+}
+
+std::string SourceTree::getLocalName() {
+	for (auto &it: *this){
+		if (it.type == DeclarationName or it.type == DefinitionName){
+			return it.name;
+		}
+	}
+	return "";
+}
+
+void SourceTree::setParent(SourceTree* parent) {
+	this->parent = parent;
+	for (auto &it: *this){
+		it.setParent(this);
+	}
+}
+
 SourceTree* SourceTree::FindBasicType(std::string& name) {
 	if (name.empty()){
 		return 0;
@@ -579,3 +626,4 @@ SourceTree* SourceTree::FindBasicType(std::string& name) {
 	}
 	return 0;
 }
+

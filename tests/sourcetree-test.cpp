@@ -121,7 +121,7 @@ TEST_CASE("for"){
 }
 
 TEST_CASE("class declaration"){
-	stringstream ss("template <class T> class apa { int x; };");
+	stringstream ss("template <class T> class Apa { int x; };");
 
 	SourceTree st;
 	st.parse(ss);
