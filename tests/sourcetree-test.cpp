@@ -60,7 +60,9 @@ TEST_CASE("user defined datatype"){
 	st.secondPass();
 	st.print(cout, 0);
 
-	ASSERT(0, "not implemented");
+	string name("Apa");
+
+	ASSERT(st.findDataType(name), "data type not found");
 }
 
 TEST_CASE("preprocessor command"){
@@ -172,13 +174,20 @@ TEST_CASE("assignment"){
 	sourceTree.print(cout, 0);
 }
 
+TEST_CASE("ambiguous statements") {
+	auto st = SourceTree::CreateFromString("int *x = 0;"
+			"int y, z;"
+			"y * z;"
+			"class Apa {};"
+			"Apa *apa;");
+	st.print(cout, 0);
+	string className = "Apa";
+	ASSERT(st.findDataType(className), "cannot find class Apa");
+}
+
 TEST_CASE("templates"){
-	stringstream ss("template <class T> int apa(T bepa);");
+	auto st = SourceTree::CreateFromString("template <class T> int apa(T bepa);");
 
-	SourceTree st;
-	st.parse(ss);
-
-	st.secondPass();
 	st.print(cout, 0);
 }
 
@@ -189,6 +198,71 @@ TEST_CASE("multiple character operator"){
 
 	ASSERT_EQ(sourceTree.front().name, "+=");
 	ASSERT_EQ(sourceTree.front().type, SourceTree::Operator);
+}
+
+TEST_CASE("complete expression namespaces"){
+	{
+		auto st = SourceTree::CreateFromString("int Apa");
+		auto ret = st.completeExpression("Ap");
+		ASSERT_GT(ret.size(), 0);
+		for (auto it: ret) {
+			cout << it->getFullName() << endl;
+		}
+		ASSERT_EQ(ret.front()->getFullName(), "Apa");
+	}
+
+	{ //Namespaces
+		auto st = SourceTree::CreateFromString(
+				"namespace Apa {"
+				"int bepa;"
+				"namespace Bepa {"
+				"int cepa;"
+				"}"
+				"}");
+
+		st.print(cout, 0);
+		auto ret = st.completeExpression("Apa::be");
+		ASSERT_GT(ret.size(), 0);
+		ASSERT_EQ(ret.front()->getLocalName(), "bepa");
+		ASSERT_EQ(ret.front()->getFullName(), "Apa::bepa");
+
+		ret = st.completeExpression("Apa::Bepa::ce");
+		ASSERT_GT(ret.size(), 0);
+		ASSERT_EQ(ret.front()->getLocalName(), "cepa");
+		ASSERT_EQ(ret.front()->getFullName(), "Apa::Bepa::cepa");
+	}
+
+}
+
+TEST_CASE("complete expression classes") {
+	{
+		auto st = SourceTree::CreateFromString(
+				"class Apa {"
+				"static int bepa;"
+				"};"
+				);
+
+		st.print(cout, 0);
+		auto ret = st.completeExpression("Apa::be");
+		ASSERT_GT(ret.size(), 0);
+		ASSERT_EQ(ret.front()->getLocalName(), "bepa");
+		ASSERT_EQ(ret.front()->getFullName(), "Apa::bepa");
+	}
+
+	{
+		auto st = SourceTree::CreateFromString(
+				"class Apa {"
+				"int bepa;"
+				"};"
+				"Apa apa;"
+				);
+
+		st.print(cout, 0);
+		auto ret = st.completeExpression("apa.be");
+		ASSERT_GT(ret.size(), 0);
+		ASSERT_EQ(ret.front()->getLocalName(), "bepa");
+		ASSERT_EQ(ret.front()->getFullName(), "Apa::bepa");
+	}
 }
 
 TEST_SUIT_END

@@ -4,7 +4,7 @@ OBJECTS=$(SRC:.cpp=.o)
 
 TEST_SRC=$(wildcard tests/*.cpp)
 TEST_BIN=$(TEST_SRC:.cpp=)
-CFLAGS+=--std=c++11 -g
+CFLAGS+=--std=c++11 -g -O0
 BIN=completer
 
 all: $(OBJECTS) $(TEST_BIN) $(BIN)

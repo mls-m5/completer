@@ -9,6 +9,10 @@
 #include "tokenizer.h"
 #include <fstream>
 #include <map>
+#include <sstream>
+
+#define PRINT_DEBUG true
+#define DEBUG if(PRINT_DEBUG)
 
 using namespace std;
 
@@ -36,6 +40,7 @@ vector<string> controlStatements = {
 		"switch",
 };
 
+//For converting string to type
 map<string, SourceTree::DataType> nameInterpretations = {
 		{"if", SourceTree::ControlStatementKeyword},
 		{"while", SourceTree::ControlStatementKeyword},
@@ -47,6 +52,7 @@ map<string, SourceTree::DataType> nameInterpretations = {
 		{"return", SourceTree::ReturnKeyword},
 		{"new", SourceTree::NewKeyword},
 		{"delete", SourceTree::DeleteKeyword},
+		{"namespace", SourceTree::NamespaceKeyWord},
 
 		{"+", SourceTree::Operator},
 		{"++", SourceTree::Operator},
@@ -55,9 +61,13 @@ map<string, SourceTree::DataType> nameInterpretations = {
 		{",", SourceTree::ComaOperator},
 		{";", SourceTree::Semicolon},
 		{"=", SourceTree::Equals},
+		{"::", SourceTree::ScopeResolution},
+		{"->", SourceTree::ElementSelectionThroughPointer},
+		{".", SourceTree::ElementSelectionThroughPointer},
 
 };
 
+//For converting type to string
 const map<SourceTree::DataType, string> typeNameStrings = {
 		{SourceTree::Equals, "equals"},
 		{SourceTree::Raw, "raw"},
@@ -68,6 +78,8 @@ const map<SourceTree::DataType, string> typeNameStrings = {
 		{SourceTree::Operator, "operator"},
 		{SourceTree::DeclarationName, "declaration name"},
 		{SourceTree::DefinitionName, "name"},
+		{SourceTree::NamespaceKeyWord, "namespace keyword"},
+		{SourceTree::Namespace, "namespace"},
 };
 
 typedef const vector<SourceTree::DataType> patternType;
@@ -171,6 +183,20 @@ std::vector<replacementRule> patternInterpretations = {
 		},
 
 		{controlStatementPattern, SourceTree::ControlStatement},
+
+		//Namespace
+		{{
+				SourceTree::NamespaceKeyWord,
+				SourceTree::Raw,
+				SourceTree::BraceBlock,
+		},
+				SourceTree::Namespace,
+				{
+						SourceTree::NamespaceKeyWord,
+						SourceTree::DefinitionName,
+						SourceTree::BraceBlock,
+				}
+		},
 
 		{{
 				SourceTree::VariableDeclaration,
@@ -363,6 +389,15 @@ void SourceTree::print(std::ostream& stream, int level) {
 	if (auto f = typeNameStrings.find(type) != typeNameStrings.end()){
 		stream << " : " << typeNameStrings.at(type);
 	}
+
+	if (pointerDepth) {
+		stream << ", pointerdepth: " << pointerDepth;
+	}
+
+	if (dataType) {
+		stream << ", datatype: " << dataType->getFullName();
+	}
+
 	if (size()){
 //		intent(stream, level);
 		stream << " : start group ";
@@ -456,37 +491,57 @@ void SourceTree::secondPass() {
 			it = erase(it);
 			continue;
 		}
-		else if (auto tmpType = findDataType(it->name)){
-			cout << "datatype " << it->name << endl;
-			it->type = Type;
-			it->dataType = tmpType;
+		else if (it->name == "static") {
+			cout << "do not handle static keyword.. skipping" << endl;
+			it = erase(it);
+			continue;
+		}
+//		else if (it->type == BraceBlock) {
+//			//Do nothing
+//		}
+		else if (it->type == Raw) {
+			if (auto tmpType = findDataType(it->name)){
+				cout << "datatype " << it->name << endl;
+				it->type = Type;
+				it->dataType = tmpType;
 
-			//Start chunking togther datatypes that consists of several words
-			auto jt = it;
-			++jt;
-			if (FindBasicType(it->name)){
-				while (jt != end()){
-					if (auto tmpType2 = FindBasicType(jt->name)){
+				//Start chunking togther datatypes that consists of several words
+				auto jt = it;
+				++jt;
+				if (FindBasicType(it->name)){
+					while (jt != end()){
+						if (auto tmpType2 = FindBasicType(jt->name)){
 
-						it->name += (" " + jt->name);
-						cout << "multi word data type " << it->name << endl;
-						it->dataType = tmpType2;
+							it->name += (" " + jt->name);
+							cout << "multi word data type " << it->name << endl;
+							it->dataType = tmpType2;
 
-						jt = erase(jt);
-					}
-					else {
-						break;
+							jt = erase(jt);
+						}
+						else {
+							break;
+						}
 					}
 				}
-			}
-//			it->dataType = findDataType(it->name);
+				//			it->dataType = findDataType(it->name);
 
-			//Count pointer depth
-			while (jt != end() and jt->name == "*"){
-				++it->pointerDepth;
-				jt = erase(jt);
+				//Count pointer depth
+				while (jt != end() and jt->name == "*"){
+					++it->pointerDepth;
+					jt = erase(jt);
+				}
 			}
 		}
+
+		//Debugging namespaces
+//		if (it->name == "Bepa"){
+//			cout << "här" << endl;
+//			for (auto iit: unprocessedExpressions) {
+//				cout << "---" << endl;
+//				iit->print(cout, 0);
+//			}
+//		}
+
 
 		//Load in templates in beginning of statement
 //		if (unprocessedExpressions.empty() and it->type == TemplateBlock){
@@ -507,6 +562,14 @@ void SourceTree::secondPass() {
 						pattern.first, pattern.second, pattern.replacementPattern)){
 					cout << "grouped pattern " << pattern.second << endl;
 					break;
+//
+//					//Todo: Extract this to function
+//					if (it->type == VariableDeclaration) {
+//						auto typeBranch = it->findBranchByType(Type)->dataType;
+//						if (typeBranch) {
+//							it->dataType = typeBranch->dataType;
+//						}
+//					}
 				}
 			}
 		}
@@ -524,11 +587,14 @@ SourceTree* SourceTree::findDataType(std::string &name) {
 		return st;
 	}
 	for (auto &it: *this){
-		if (it.type == Type){
-			if (it.name == name){
+		if (it.type == Type or it.type == ClassDeclaration){
+			if (it.getFullName() == name){
 				return &it;
 			}
 		}
+	}
+	if (parent) {
+		parent->findDataType(name);
 	}
 	if (this->name == name){
 		return this;
@@ -626,4 +692,173 @@ SourceTree* SourceTree::FindBasicType(std::string& name) {
 	}
 	return 0;
 }
+std::list<SourceTree *> SourceTree::findExpressions(std::list<Token> tokens) {
+	std::list<SourceTree *> ret;
+	if (tokens.size() >= 2) {
+		auto name = tokens.front();
+		tokens.pop_front();
+		auto operatorName = tokens.back(); //Todo check that it is :: -> or something
+		tokens.pop_front();
 
+		auto datatypeFound = findDataType(name);
+		if (datatypeFound) {
+//			ret.push_back(datatypeFound);
+			auto codeBlock = datatypeFound->findBranchByType(BraceBlock);
+			if (codeBlock) {
+				ret.push_back(codeBlock);
+			}
+			if (!tokens.empty()){
+				auto found = codeBlock->findExpressions(tokens);
+				ret.splice(ret.end(), found);
+			}
+		}
+
+//		auto namespace = findNameSpace(name);
+		auto namespaceFound = findNameSpace(name);
+		if (namespaceFound) {
+			auto codeblock = namespaceFound->findBranchByType(BraceBlock);
+			ret.push_back(codeblock);
+//			codeblock->print(cout, 0);
+			if (!tokens.empty()){
+				auto found = codeblock->findExpressions(tokens);
+				ret.splice(ret.end(), found);
+			}
+		}
+
+		auto variableFound = findVariable(name);
+		if (variableFound) {
+//			ret.push_back(variableFound);
+			if (auto datatypeFound = variableFound->getType()){
+				if (auto codeBlock = datatypeFound->findBranchByType(BraceBlock)){
+					ret.push_back(codeBlock);
+					if (!tokens.empty()){
+						auto found = variableFound->findExpressions(tokens);
+						ret.splice(ret.end(), found);
+					}
+				}
+			}
+		}
+	}
+//	else if (tokens.size() == 2){
+//		//this should not happend
+//		cerr << "trange error __FILE__ << ":" << __LINE__ << endl;
+//	}
+	else if (tokens.size() == 0){
+		//Let the calling function do the rest
+	}
+	return ret;
+}
+
+std::list<SourceTree*> SourceTree::completeExpression(std::string name) {
+	std::list<SourceTree *> ret;
+
+	auto isBeginningSame = [] (std::string word, std::string beginning) {
+		if (beginning.size() > word.size()){
+			return false;
+		}
+		if (beginning.size() == word.size()) {
+			return word == beginning;
+		}
+		for (int i = 0; i < beginning.size(); ++i){
+			if (beginning[i] != word[i]) {
+				return false;
+			}
+		}
+
+		return true;
+	};
+
+	istringstream ss(name);
+	std::list<Token> tokens;
+	while (ss){
+		tokens.push_back(Tokenizer::GetNextToken(ss));
+	}
+	DEBUG cout << "tokens to complete with:" << endl;
+	for (auto &it: tokens){
+		DEBUG cout << "(" << it << "), ";
+	}
+	DEBUG cout << endl;
+
+	string completeName = tokens.back();
+	tokens.pop_back();
+
+	list<SourceTree*> possibleContainers = {this};
+	if (tokens.size() >= 2) {
+		auto baseExpressions = findExpressions(tokens);
+		possibleContainers.splice(possibleContainers.end(), baseExpressions);
+	}
+
+	for (auto &match: possibleContainers){
+		for (auto &it: *match){
+//			auto branchName = it.getFullName();
+			auto branchName = it.getLocalName();
+			DEBUG cout << branchName << "(" << it.getFullName() <<
+					") compared to " << completeName << " (" << name << ")" << endl;
+			if (isBeginningSame(branchName, completeName)){
+				DEBUG cout << branchName << " match to '" << completeName << "'" << endl;
+				ret.push_back(&it);
+			}
+		}
+	}
+
+	return ret;
+}
+
+SourceTree* SourceTree::findVariable(std::string& name) {
+	for (auto &it: *this) {
+		if (it.type == VariableDeclaration) {
+			if (it.getFullName() == name) {
+				return &it;
+			}
+		}
+//		if (it.type == BraceBlock) {
+//			auto ret = it.findVariable(name);
+//			if (ret) {
+//				return ret;
+//			}
+//		}
+	}
+	return 0;
+}
+
+SourceTree* SourceTree::findNameSpace(std::string& name) {
+	for (auto &it: *this) {
+		if (it.type == Namespace) {
+			if (it.getFullName() == name){
+				return &it;
+			}
+		}
+	}
+	return 0;
+}
+
+SourceTree* SourceTree::findBranchByType(DataType type) {
+	for (auto &it: *this) {
+		if (it.type == type) {
+			return &it;
+		}
+	}
+	return 0;
+}
+
+SourceTree* SourceTree::getType() {
+	if (dataType) {
+		return dataType;
+	}
+	if (auto typeBranch = findBranchByType(Type)){
+		return typeBranch->dataType;
+	}
+	return 0;
+}
+
+SourceTree SourceTree::CreateFromString(std::string source) {
+	SourceTree sourceTree;
+	istringstream ss(source);
+	sourceTree.parse(ss);
+	sourceTree.secondPass();
+	return sourceTree; //This would be a waste if there was no move constructor :)
+}
+
+std::string SourceTree::getTypeName() {
+	return typeNameStrings.at(type);
+}

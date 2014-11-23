@@ -46,6 +46,7 @@ public:
 class SourceTree: public std::list<SourceTree> {
 public:
 	enum DataType{
+		None,
 		Type,
 		Digit,
 		UnqualifiedId,
@@ -63,10 +64,16 @@ public:
 		ControlStatementKeyword,
 		ControlStatement,
 		AssignmentStatement,
+		NamespaceKeyWord,
+		Namespace,
+		NamespaceScope,
 
 		Semicolon,
 		ComaOperator,
 		Equals,
+		ScopeResolution,
+		ElementSelectionThroughPointer,
+		ElementSelectionByReference,
 		Operator,
 
 		ArrayBlock,
@@ -101,10 +108,20 @@ public:
 	void print(std::ostream &stream, int level);
 	std::string getFullName();
 	std::string getLocalName();
+	std::string getTypeName();
 	void setParent(SourceTree *parent);
 
+	std::list<SourceTree *> completeExpression(std::string name);
+	std::list<SourceTree *> findExpressions(std::list<Token> tokens);
 	SourceTree *findDataType(std::string &name);
+	SourceTree *findBranchByType(DataType type);
+	SourceTree *findVariable(std::string &name);
+	SourceTree *findNameSpace(std::string &name);
 	static SourceTree *FindBasicType(std::string &name);
+	SourceTree *getType();
+
+	//For testing mainly
+	static SourceTree CreateFromString(std::string);
 
 	Token name = Token("", Token::None);
 	std::shared_ptr<SourceContent> content = 0;

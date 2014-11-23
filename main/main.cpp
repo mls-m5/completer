@@ -28,12 +28,27 @@ int printAst(istream &stream){
 	return 0;
 }
 
+int completeSymbol(istream &stream, std::string expression){
+	SourceTree st;
+	st.parse(stream, FilePosition());
+	st.secondPass();
+	auto completionList = st.completeExpression(expression);
+
+	for (auto it: completionList) {
+		cout << "completion : " << it->getFullName() << endl;
+	}
+
+	return 0;
+}
+
 int main(int argc, char **argv) {
 	enum {
 		Default,
 		Tokenize,
 		AstOutput,
+		GlobalComplete,
 	} mode = Default;
+	std::string argument;
 
 	istream *input = 0;
 	for (int i = 0; i < argc; ++i){
@@ -44,16 +59,29 @@ int main(int argc, char **argv) {
 		else if (arg == "--tokenize"){
 			mode = Tokenize;
 		}
-		if (arg == "-f" or arg == "--file"){
-			i ++;
+		else if (arg == "--complete") {
+			mode = GlobalComplete;
+			++i;
+			if (i >= argc) {
+				cerr << "expression needed" << endl;
+				return 1;
+			}
+			argument = argv[i];
+		}
+		else if (arg == "-f" or arg == "--file"){
+			++i;
 			if (!input){
 				input = new ifstream(argv[i]);
+				if (!input) {
+					cerr << "file note opened" << endl;
+					return 1;
+				}
 			}
 			else {
 				cerr << "can only select one file" << endl;
 			}
 		}
-		if (arg == "-" or arg == "--stdin"){
+		else if (arg == "-" or arg == "--stdin"){
 			input = &cin;
 		}
 	}
@@ -70,8 +98,11 @@ int main(int argc, char **argv) {
 	case AstOutput:
 		printAst(*input);
 		break;
+	case GlobalComplete:
+		completeSymbol(*input, argument);
+		break;
 	case Default:
-		cerr << "no mode selected --tokenize or --ast" << endl;
+		cerr << "no mode selected --tokenize, --ast, or --complete" << endl;
 	}
 }
 
