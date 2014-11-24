@@ -23,7 +23,6 @@ static std::map<std::string, std::string> test_results;
 inline int runTests(){
 	using std::cout;
 	using std::endl;
-	int failed = 0;
 	int numFailed = 0;
 	int numSucceded = 0;
 	cout << "==== Starts test suit " << test_file_name <<  " ====" << endl << endl;
@@ -32,8 +31,11 @@ inline int runTests(){
 		cout << "--- running test " << it.first << " ---" << endl;
 		test_result = 0;
 		it.second();
-		if (test_result){
-			failed = 1;
+		if (test_result == -1) {
+			cout << " --> not impl" << endl << endl;
+			test_results[it.first] = "not implemented";
+		}
+		else if (test_result){
 			cout << " --> failed" << endl << endl;
 			numFailed ++;
 			test_results[it.first] = "failed";
@@ -43,16 +45,19 @@ inline int runTests(){
 			test_results[it.first] = "succeded";
 			numSucceded ++;
 		}
-
 	}
 
 	cout << endl;
 	cout << "results: " << endl;
 	for (auto it: test_results) {
-		cout << it.second << " :\t" << it.first << endl;
+		cout << it.first;
+		for (int i = it.first.size(); i < 40; ++i) {
+			cout << " ";
+		}
+		cout << " :" << it.second << endl;
 	}
 	cout << endl;
-	if (failed){
+	if (numFailed){
 		cout << "MISSLYCKADES";
 	}
 	else{
@@ -61,7 +66,7 @@ inline int runTests(){
 	cout << endl;
 	cout << "Failed: " << numFailed << " Succeded: " << numSucceded << endl;
 
-	return failed;
+	return numFailed > 0;
 }
 
 #define TEST_SUIT_BEGIN  std::map<std::string, testFunction> testMap; int test_result; const char *test_file_name = __FILE__; void initTests(){
@@ -86,3 +91,5 @@ inline int runTests(){
 
 #define ERROR(error) PRINT_INFO; std::cout << error << std::endl; test_result ++; return;
 
+//The not implemented error is used to flag for wanted features not implemented
+#define ERROR_NOT_IMPLEMENTED() PRINT_INFO; std::cout << "not implemented" << std::endl; test_result = -1; return;

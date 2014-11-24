@@ -303,6 +303,19 @@ FilePosition SourceTree::parse(std::istream& stream, FilePosition fileIterator) 
 			push_back(SourceTree(token, BracketBlock));
 			filePosition = back().parse(stream, filePosition);
 		}
+		else if (token == "->" or token == "::" or token == "."){
+			back().name += token;
+			token = Tokenizer::GetNextToken(stream);
+			filePosition += token;
+			if (token.type == Token::Word) {
+				back().name += token;
+				token = Tokenizer::GetNextToken(stream);
+				filePosition += token;
+			}
+			cout << "new token: " << back().name << endl;
+			continue;
+
+		}
 		else if (token.type == Token::KeyWord and token == "template"){
 			token = Tokenizer::GetNextToken(stream);
 			filePosition += token;
@@ -497,7 +510,7 @@ void SourceTree::secondPass() {
 			continue;
 		}
 //		else if (it->type == BraceBlock) {
-//			//Do nothing
+//			//Do nothing this was to avoid braces to be interpreted as variable declarations
 //		}
 		else if (it->type == Raw) {
 			if (auto tmpType = findDataType(it->name)){
@@ -505,7 +518,7 @@ void SourceTree::secondPass() {
 				it->type = Type;
 				it->dataType = tmpType;
 
-				//Start chunking togther datatypes that consists of several words
+				//Start chunking together data types that consists of several words
 				auto jt = it;
 				++jt;
 				if (FindBasicType(it->name)){

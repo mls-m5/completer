@@ -173,12 +173,19 @@ Token Tokenizer::GetNextToken(std::istream& stream) {
 		}
 
 		case Token::Digit:
+		{
 			while ((isdigit(c) || c == '.') && stream){
 				ss.put(c);
 				c = stream.get();
 			}
 			stream.unget();
-			return Token(ss.str(), Token::Digit);
+
+			auto token = Token(ss.str(), Token::Digit);
+			if (token == ".") {
+				token.type = Token::OperatorOrPunctuator;
+			}
+			return token;
+		}
 
 		case Token::String:
 			while (c != '"' && stream){
