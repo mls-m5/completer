@@ -18,6 +18,7 @@ typedef void (*testFunction)();
 extern std::map<std::string, testFunction> testMap;
 extern int test_result;
 extern const char* test_file_name;
+static std::map<std::string, std::string> test_results;
 
 inline int runTests(){
 	using std::cout;
@@ -35,14 +36,21 @@ inline int runTests(){
 			failed = 1;
 			cout << " --> failed" << endl << endl;
 			numFailed ++;
+			test_results[it.first] = "failed";
 		}
 		else{
 			cout << " --> success " << endl << endl;
+			test_results[it.first] = "succeded";
 			numSucceded ++;
 		}
 
 	}
 
+	cout << endl;
+	cout << "results: " << endl;
+	for (auto it: test_results) {
+		cout << it.second << " :\t" << it.first << endl;
+	}
 	cout << endl;
 	if (failed){
 		cout << "MISSLYCKADES";

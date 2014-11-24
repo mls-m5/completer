@@ -214,10 +214,10 @@ TEST_CASE("complete expression namespaces"){
 	{ //Namespaces
 		auto st = SourceTree::CreateFromString(
 				"namespace Apa {"
-				"int bepa;"
-				"namespace Bepa {"
-				"int cepa;"
-				"}"
+				"	int bepa;"
+				"	namespace Bepa {"
+				"		int cepa;"
+				"	}"
 				"}");
 
 		st.print(cout, 0);
@@ -263,6 +263,39 @@ TEST_CASE("complete expression classes") {
 		ASSERT_EQ(ret.front()->getLocalName(), "bepa");
 		ASSERT_EQ(ret.front()->getFullName(), "Apa::bepa");
 	}
+}
+
+TEST_CASE("complete complex cases") {
+	auto st = SourceTree::CreateFromString(
+			"namespace Apa {"
+			"	class Apa {"
+			"		static int apa;"
+			"		int bepa;"
+			"		class Bepa {"
+			"			int cepa;"
+			"		};"
+			"	};"
+			"}"
+			"Apa::Apa apa;"
+			"Apa::Apa::Bepa bepa;"
+	);
+
+	st.print(cout, 0);
+	auto ret = st.completeExpression("Apa::Apa::ap");
+	ASSERT_GT(ret.size(), 0);
+	ASSERT_EQ(ret.front()->getFullName(), "Apa::Apa::apa");
+
+	ret = st.completeExpression("bepa.ce");
+	ASSERT_GT(ret.size(), 0);
+	ASSERT_EQ(ret.front()->getFullName(), "Apa::Apa::Bepa::cepa");
+}
+
+TEST_CASE("complete auto expressions") {
+	ASSERT(0, "not implemented");
+}
+
+TEST_CASE("complete 'using' statement") {
+	ASSERT(0, "not implemented");
 }
 
 TEST_SUIT_END

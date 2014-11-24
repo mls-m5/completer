@@ -371,7 +371,7 @@ void intent(ostream & stream, int level){
 	}
 }
 
-void SourceTree::print(std::ostream& stream, int level) {
+void SourceTree::print(std::ostream& stream, int level) const {
 
 	intent(stream, level);
 	if (name.empty()){
@@ -523,7 +523,6 @@ void SourceTree::secondPass() {
 						}
 					}
 				}
-				//			it->dataType = findDataType(it->name);
 
 				//Count pointer depth
 				while (jt != end() and jt->name == "*"){
@@ -532,16 +531,6 @@ void SourceTree::secondPass() {
 				}
 			}
 		}
-
-		//Debugging namespaces
-//		if (it->name == "Bepa"){
-//			cout << "här" << endl;
-//			for (auto iit: unprocessedExpressions) {
-//				cout << "---" << endl;
-//				iit->print(cout, 0);
-//			}
-//		}
-
 
 		//Load in templates in beginning of statement
 //		if (unprocessedExpressions.empty() and it->type == TemplateBlock){
@@ -562,14 +551,6 @@ void SourceTree::secondPass() {
 						pattern.first, pattern.second, pattern.replacementPattern)){
 					cout << "grouped pattern " << pattern.second << endl;
 					break;
-//
-//					//Todo: Extract this to function
-//					if (it->type == VariableDeclaration) {
-//						auto typeBranch = it->findBranchByType(Type)->dataType;
-//						if (typeBranch) {
-//							it->dataType = typeBranch->dataType;
-//						}
-//					}
 				}
 			}
 		}
@@ -588,7 +569,7 @@ SourceTree* SourceTree::findDataType(std::string &name) {
 	}
 	for (auto &it: *this){
 		if (it.type == Type or it.type == ClassDeclaration){
-			if (it.getFullName() == name){
+			if (it.getLocalName() == name or it.getFullName() == name){
 				return &it;
 			}
 		}
@@ -646,7 +627,7 @@ bool SourceTree::tryGroupExpressions(iterator &it, std::vector<SourceTree*> &unp
 	return false;
 }
 
-std::string SourceTree::getFullName() {
+std::string SourceTree::getFullName() const {
 	if (not parent) {
 		return getLocalName();
 	}
@@ -665,7 +646,7 @@ std::string SourceTree::getFullName() {
 	}
 }
 
-std::string SourceTree::getLocalName() {
+std::string SourceTree::getLocalName() const {
 	for (auto &it: *this){
 		if (it.type == DeclarationName or it.type == DefinitionName){
 			return it.name;
@@ -807,16 +788,10 @@ std::list<SourceTree*> SourceTree::completeExpression(std::string name) {
 SourceTree* SourceTree::findVariable(std::string& name) {
 	for (auto &it: *this) {
 		if (it.type == VariableDeclaration) {
-			if (it.getFullName() == name) {
+			if (it.getLocalName() == name or it.getFullName() == name) {
 				return &it;
 			}
 		}
-//		if (it.type == BraceBlock) {
-//			auto ret = it.findVariable(name);
-//			if (ret) {
-//				return ret;
-//			}
-//		}
 	}
 	return 0;
 }
@@ -824,7 +799,7 @@ SourceTree* SourceTree::findVariable(std::string& name) {
 SourceTree* SourceTree::findNameSpace(std::string& name) {
 	for (auto &it: *this) {
 		if (it.type == Namespace) {
-			if (it.getFullName() == name){
+			if (it.getLocalName() == name or it.getFullName() == name){ //Todo: maybe getFullName is unnessecary? It takes a lots of resources anyway
 				return &it;
 			}
 		}
@@ -859,6 +834,6 @@ SourceTree SourceTree::CreateFromString(std::string source) {
 	return sourceTree; //This would be a waste if there was no move constructor :)
 }
 
-std::string SourceTree::getTypeName() {
+std::string SourceTree::getTypeName() const {
 	return typeNameStrings.at(type);
 }

@@ -105,10 +105,10 @@ public:
 	bool tryGroupExpressions(iterator &it, std::vector<SourceTree*> &unprocessedExpressions,
 			const std::vector<DataType> &pattern, DataType resultingType, const std::vector<DataType> &replacementPattern);
 
-	void print(std::ostream &stream, int level);
-	std::string getFullName();
-	std::string getLocalName();
-	std::string getTypeName();
+	void print(std::ostream &stream, int level) const;
+	std::string getFullName() const;
+	std::string getLocalName() const;
+	std::string getTypeName() const;
 	void setParent(SourceTree *parent);
 
 	std::list<SourceTree *> completeExpression(std::string name);
