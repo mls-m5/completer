@@ -844,6 +844,7 @@ SourceTree SourceTree::CreateFromString(std::string source) {
 	istringstream ss(source);
 	sourceTree.parse(ss);
 	sourceTree.secondPass();
+	DEBUG sourceTree.print(cout, 0);
 	return sourceTree; //This would be a waste if there was no move constructor :)
 }
 

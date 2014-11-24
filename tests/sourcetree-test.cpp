@@ -60,7 +60,6 @@ TEST_CASE("basic data type"){
 
 TEST_CASE("user defined datatype"){
 	auto st = SourceTree::CreateFromString("class Apa { int x }; Apa apa;");
-	st.print(cout, 0);
 
 	string name("Apa");
 
@@ -73,7 +72,6 @@ TEST_CASE("preprocessor command"){
 	auto st = SourceTree::CreateFromString(
 			"#pragma once \n"
 			"int apa; ");
-	st.print(cout, 0);
 }
 
 
@@ -82,12 +80,10 @@ TEST_CASE("preprocessor command"){
 TEST_CASE("lambda functions"){
 	{
 		auto st = SourceTree::CreateFromString("[] (int x) {cout << \"hej\" << endl; } ");
-		st.print(cout, 0);
 		ASSERT_EQ(st.front().type, SourceTree::LambdaFunction);
 	}
 	{
 		auto st = SourceTree::CreateFromString("auto f = [] (int x) {cout << \"hej\" << endl; }; ");
-		st.print(cout, 0);
 	}
 }
 
@@ -96,8 +92,6 @@ TEST_CASE("lambda functions"){
 
 TEST_CASE("multiple word datatypes"){
 	auto sourceTree = SourceTree::CreateFromString("long int **apa;");
-
-	sourceTree.print(cout, 0);
 
 	ASSERT_EQ(sourceTree.front().pointerDepth, 0);
 	ASSERT_EQ(sourceTree.front().type, SourceTree::VariableDeclaration);
@@ -116,12 +110,7 @@ TEST_CASE("for"){
 
 
 TEST_CASE("class declaration"){
-	stringstream ss("template <class T> class Apa { int x; };");
-
-	SourceTree st;
-	st.parse(ss);
-	st.secondPass();
-	st.print(cout, 0);
+	auto st = SourceTree::CreateFromString("template <class T> class Apa { int x; };");
 
 	ASSERT_EQ(st.front().type, SourceTree::ClassDeclaration);
 }
@@ -130,12 +119,7 @@ TEST_CASE("class declaration"){
 
 
 TEST_CASE("struct declaration"){
-	stringstream ss("template <class T> struct apa { int x; };");
-
-	SourceTree st;
-	st.parse(ss);
-	st.secondPass();
-	st.print(cout, 0);
+	auto st = SourceTree::CreateFromString("template <class T> struct apa { int x; };");
 
 	ASSERT_EQ(st.front().type, SourceTree::StructDeclaration);
 }
@@ -155,36 +139,27 @@ TEST_CASE("paranthesis"){
 
 
 TEST_CASE("functions"){
-	stringstream ss("int main(int x) {return x;}");
-	SourceTree st;
-	st.parse(ss);
-	st.secondPass();
-
-	st.print(cout, 0);
+	auto st = SourceTree::CreateFromString("int main(int x) {return x;}");
 }
 
 
 
 
 TEST_CASE("assignment"){
-	stringstream ss("int i = 0;");
-
-	SourceTree sourceTree;
-	sourceTree.parse(ss);
-	sourceTree.secondPass();
-	sourceTree.print(cout, 0);
+	auto st = SourceTree::CreateFromString("int i = 0;");
 }
 
 
 
 
 TEST_CASE("ambiguous statements") {
-	auto st = SourceTree::CreateFromString("int *x = 0;"
+	auto st = SourceTree::CreateFromString(
+			"int *x = 0;"
 			"int y, z;"
 			"y * z;"
 			"class Apa {};"
-			"Apa *apa;");
-	st.print(cout, 0);
+			"Apa *apa;"
+			);
 	string className = "Apa";
 	ASSERT(st.findDataType(className), "cannot find class Apa");
 }
@@ -193,8 +168,6 @@ TEST_CASE("ambiguous statements") {
 
 TEST_CASE("templates"){
 	auto st = SourceTree::CreateFromString("template <class T> int apa(T bepa);");
-
-	st.print(cout, 0);
 }
 
 
@@ -231,7 +204,6 @@ TEST_CASE("complete expression namespaces"){
 				"	}"
 				"}");
 
-		st.print(cout, 0);
 		auto ret = st.completeExpression("Apa::be");
 		ASSERT_GT(ret.size(), 0);
 		ASSERT_EQ(ret.front()->getLocalName(), "bepa");
@@ -256,7 +228,6 @@ TEST_CASE("complete expression classes") {
 				"};"
 				);
 
-		st.print(cout, 0);
 		auto ret = st.completeExpression("Apa::be");
 		ASSERT_GT(ret.size(), 0);
 		ASSERT_EQ(ret.front()->getLocalName(), "bepa");
@@ -271,7 +242,6 @@ TEST_CASE("complete expression classes") {
 				"Apa apa;"
 				);
 
-		st.print(cout, 0);
 		auto ret = st.completeExpression("apa.be");
 		ASSERT_GT(ret.size(), 0);
 		ASSERT_EQ(ret.front()->getLocalName(), "bepa");
@@ -297,7 +267,6 @@ TEST_CASE("complete complex cases") {
 			"Apa::Apa::Bepa bepa;"
 	);
 
-	st.print(cout, 0);
 	auto ret = st.completeExpression("Apa::Apa::ap");
 	ASSERT_GT(ret.size(), 0);
 	ASSERT_EQ(ret.front()->getFullName(), "Apa::Apa::apa");
@@ -319,8 +288,6 @@ TEST_CASE("namespaced datatype") {
 			"Apa::Apa apa;"
 	);
 
-	st.print(cout, 0);
-
 	string name = "Apa::Apa";
 	auto ret = st.findDataType(name);
 	ASSERT(ret, "datatype not found");
@@ -334,6 +301,10 @@ TEST_CASE("namespaced datatype") {
 
 
 TEST_CASE("complete auto expressions") {
+	auto st = SourceTree::CreateFromString(
+			"int apa;"
+			"auto bepa = apa;"
+	);
 	ERROR_NOT_IMPLEMENTED();
 }
 
