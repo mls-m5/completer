@@ -84,5 +84,6 @@ const std::vector<std::string> preprocessingOpOrPunc = {
 		"!=",
 		"->",
 		"~",
+		"^",
 };
 

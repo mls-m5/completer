@@ -48,6 +48,7 @@ public:
 	enum DataType{
 		None,
 		Type,
+		Variable,
 		Digit,
 		UnqualifiedId,
 		Scope,
@@ -75,6 +76,7 @@ public:
 		ElementSelectionThroughPointer,
 		ElementSelectionByReference,
 		Operator,
+		BinaryOperation,
 
 		ArrayBlock,
 
@@ -99,13 +101,15 @@ public:
 
 	FilePosition parse(std::istream &stream, FilePosition startPos = FilePosition());
 	void secondPass();
+	void checkFieldForNames(iterator &it);
+	void groupExpressionsWithOperators(iterator to, int count);
 	SourceTree::iterator groupExpressions(SourceTree::iterator last, int count);
 	SourceTree::iterator groupExpressions(SourceTree::iterator first, SourceTree::iterator last);
 
 	bool tryGroupExpressions(iterator &it, std::vector<SourceTree*> &unprocessedExpressions,
 			const std::vector<DataType> &pattern, DataType resultingType, const std::vector<DataType> &replacementPattern);
 
-	void print(std::ostream &stream, int level) const;
+	void print(std::ostream &stream, int level);
 	std::string getFullName() const;
 	std::string getLocalName() const;
 	std::string getTypeName() const;
@@ -115,7 +119,10 @@ public:
 	std::list<SourceTree *> findExpressions(std::list<Token> tokens);
 	SourceTree *findDataType(std::string &name);
 	SourceTree *findBranchByType(DataType type);
-	SourceTree *findVariable(std::string &name);
+	SourceTree *findVariable(const std::string *name);
+	SourceTree *findVariable(std::string name) {
+		return findVariable(&name);
+	}
 	SourceTree *findNameSpace(std::string &name);
 	static SourceTree *FindBasicType(std::string &name);
 	SourceTree *getType();

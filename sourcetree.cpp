@@ -14,11 +14,13 @@
 #define PRINT_DEBUG true
 #define DEBUG if(PRINT_DEBUG)
 
+#include "binaryoperators.h"
 using namespace std;
 
 list<SourceTree*> basicTypes;
+SourceTree *autoTypePointer; //Used to identify auto pointer
 
-vector<string> basicTypeNames = {
+static const vector<string> basicTypeNames = {
 		"void",
 		"int",
 		"auto",
@@ -80,6 +82,9 @@ const map<SourceTree::DataType, string> typeNameStrings = {
 		{SourceTree::DefinitionName, "name"},
 		{SourceTree::NamespaceKeyWord, "namespace keyword"},
 		{SourceTree::Namespace, "namespace"},
+		{SourceTree::Variable, "variable"},
+		{SourceTree::Digit, "digit"},
+		{SourceTree::BinaryOperation, "binary operation"},
 };
 
 typedef const vector<SourceTree::DataType> patternType;
@@ -198,11 +203,12 @@ std::vector<replacementRule> patternInterpretations = {
 				}
 		},
 
-		{{
-				SourceTree::VariableDeclaration,
-				SourceTree::Equals
-		}, //Probably another pattern in the future
-				SourceTree::AssignmentStatement},
+//		{{
+//				SourceTree::VariableDeclaration,
+//				SourceTree::Equals
+//		}, //Probably another pattern in the future
+//				SourceTree::AssignmentStatement
+//		},
 
 		{{
 			SourceTree::VariableDeclaration,
@@ -238,19 +244,13 @@ public:
 				typeAst->type = SourceTree::Type;
 				typeAst->name = it;
 				basicTypes.push_back(typeAst);
+				if (it == "auto") {
+					autoTypePointer = basicTypes.back();
+				}
 			}
 		}
 	}
 } _initializer;
-
-bool isDataType(string &name){
-	for (auto &it: basicTypes){
-		if (it->name == name){
-			return true;
-		}
-	}
-	return false;
-}
 
 template <class T>
 bool findInContainer(T container, std::string str){
@@ -384,7 +384,7 @@ void intent(ostream & stream, int level){
 	}
 }
 
-void SourceTree::print(std::ostream& stream, int level) const {
+void SourceTree::print(std::ostream& stream, int level) {
 
 	intent(stream, level);
 	if (name.empty()){
@@ -407,8 +407,10 @@ void SourceTree::print(std::ostream& stream, int level) const {
 		stream << ", pointerdepth: " << pointerDepth;
 	}
 
-	if (dataType) {
-		stream << ", datatype: " << dataType->getFullName();
+	if (auto tmpDataType = getType()) {
+		if (tmpDataType) {
+			stream << ", datatype: " << tmpDataType->getFullName();
+		}
 	}
 
 	if (size()){
@@ -483,6 +485,97 @@ bool comparePattern(const T &st, const U &pattern){
 }
 
 
+void SourceTree::checkFieldForNames(iterator &it) {
+	if (auto tmpType = findDataType(it->name)){
+		cout << "datatype " << it->name << endl;
+		it->type = Type;
+		it->dataType = tmpType;
+
+		//Start chunking together data types that consists of several words
+		auto jt = it;
+		++jt;
+		if (FindBasicType(it->name)){
+			while (jt != end()){
+				if (auto tmpType2 = FindBasicType(jt->name)){
+
+					it->name += (" " + jt->name);
+					cout << "multi word data type " << it->name << endl;
+					it->dataType = tmpType2;
+
+					jt = erase(jt);
+				}
+				else {
+					break;
+				}
+			}
+		}
+
+		//Count pointer depth
+		while (jt != end() and jt->name == "*"){
+			++it->pointerDepth;
+			jt = erase(jt);
+		}
+	}
+	else if (auto variable = findVariable(&it->name)){
+		it->type = Variable;
+		it->dataType = variable->getType();
+	}
+}
+
+
+void SourceTree::groupExpressionsWithOperators(iterator to, int count) {
+	if (count < 3) {
+		return;
+	}
+	auto stop = to;
+	auto start = stop;
+	for (int i = 0; i < count -2; ++i) {
+		--start;
+	}
+//	cout << "start " << start->name << endl;
+//	cout << "stop " << stop->name << endl;
+//	cout << "first " << start->name << endl;
+//
+//	cout << "check if some of these are binary operators ";
+//	for (auto it = start; it != stop; ++it) {
+//		cout << "'" << it->name << "' ";
+//	}
+//	cout << endl;
+	for (const auto &it: orderedBinaryOperators) {
+		for (auto op = start; op != stop; ++op) {
+//			cout << "checking " << op->name << " to " << it << endl;
+			if (op->name == it) {
+				auto first = op;
+				auto last = op;
+				--first;
+				++last;
+				cout << "grouping '" << first->name << "' '" << op->name << "' '" << last->name << "'" << endl;
+
+				if (op == start) {
+					op = groupExpressions(first, last);
+					op->type = BinaryOperation;
+					start = op;
+					++start; //The first expression will not be a operator
+				}
+				else {
+					op = groupExpressions(first, last);
+					op->type = BinaryOperation;
+				}
+//				print(cout, 0);
+				if (last == stop){
+					return;
+				}
+
+//				cout << "continuing with ";
+//				for (auto it = start; it != stop; ++it) {
+//					cout << "'" << it->name << "' " << endl;
+//				}
+//				cout << endl;
+			}
+		}
+	}
+}
+
 void SourceTree::secondPass() {
 	vector<SourceTree*> unprocessedExpressions; //A list of expressions that is not yet used
 	unprocessedExpressions.reserve(5);
@@ -513,36 +606,7 @@ void SourceTree::secondPass() {
 //			//Do nothing this was to avoid braces to be interpreted as variable declarations
 //		}
 		else if (it->type == Raw) {
-			if (auto tmpType = findDataType(it->name)){
-				cout << "datatype " << it->name << endl;
-				it->type = Type;
-				it->dataType = tmpType;
-
-				//Start chunking together data types that consists of several words
-				auto jt = it;
-				++jt;
-				if (FindBasicType(it->name)){
-					while (jt != end()){
-						if (auto tmpType2 = FindBasicType(jt->name)){
-
-							it->name += (" " + jt->name);
-							cout << "multi word data type " << it->name << endl;
-							it->dataType = tmpType2;
-
-							jt = erase(jt);
-						}
-						else {
-							break;
-						}
-					}
-				}
-
-				//Count pointer depth
-				while (jt != end() and jt->name == "*"){
-					++it->pointerDepth;
-					jt = erase(jt);
-				}
-			}
+			checkFieldForNames(it);
 		}
 
 		//Load in templates in beginning of statement
@@ -553,8 +617,29 @@ void SourceTree::secondPass() {
 			unprocessedExpressions.push_back(&*it);
 //		}
 
+
+		//Some expressions that do not need semicolon
+		if (it->type == Namespace) {
+			unprocessedExpressions.clear();
+		}
 		if (it->type == Semicolon or it->type == ComaOperator){
 			//Todo: Handle this
+//			cout << "size : " << unprocessedExpressions.size() << endl;
+//			for (auto &it: unprocessedExpressions) {
+//				cout << "'" << it->name << "' ";
+//			}
+//			cout << endl;
+			bool containsOperators = false;
+			for (auto it2: unprocessedExpressions){
+				if (it2->type == Operator or it2->type == Equals) {
+					containsOperators = true;
+				}
+			}
+			if (containsOperators) {
+				auto tmpit = it;
+				--tmpit;
+				groupExpressionsWithOperators(tmpit, unprocessedExpressions.size() - 1);
+			}
 			unprocessedExpressions.clear();
 			cout << "end of statement" << endl;
 		}
@@ -576,7 +661,7 @@ SourceTree* SourceTree::findDataType(std::string &name) {
 	if (name.empty()){
 		return 0;
 	}
-	SourceTree* st;
+	SourceTree* st = 0;
 	if ((st = FindBasicType(name))){
 		return st;
 	}
@@ -588,23 +673,31 @@ SourceTree* SourceTree::findDataType(std::string &name) {
 		}
 	}
 	if (parent) {
-		parent->findDataType(name);
+		st = parent->findDataType(name);
 	}
 	if (this->name == name){
 		return this;
 	}
-	return 0;
+	return st;
 }
 
 SourceTree::iterator SourceTree::groupExpressions(SourceTree::iterator first, SourceTree::iterator last) {
 	SourceTree st;
 	++last; //last is not included by default
-	st.insert(st.begin(), first, last);
 
-	insert(first, st);
-	auto ret = first;
-	--ret;
-	erase(first, last);
+	auto ret = insert(first, st);
+//	auto ret = first;
+//	--ret;
+	//splice moves the elements enstead of recreating and deleting
+	//this way it is possible to keep references (hopefully)
+	ret->splice(ret->begin(), *this, first, last);
+
+//	st.insert(st.begin(), first, last);
+//
+//	insert(first, st);
+//	auto ret = first;
+//	--ret;
+//	erase(first, last);
 
 	ret->setParent(this);
 
@@ -719,7 +812,7 @@ std::list<SourceTree *> SourceTree::findExpressions(std::list<Token> tokens) {
 			}
 		}
 
-		auto variableFound = findVariable(name);
+		auto variableFound = findVariable(&name);
 		if (variableFound) {
 //			ret.push_back(variableFound);
 			if (auto datatypeFound = variableFound->getType()){
@@ -798,21 +891,36 @@ std::list<SourceTree*> SourceTree::completeExpression(std::string name) {
 	return ret;
 }
 
-SourceTree* SourceTree::findVariable(std::string& name) {
+SourceTree* SourceTree::findVariable(const std::string* name) {
 	for (auto &it: *this) {
 		if (it.type == VariableDeclaration) {
-			if (it.getLocalName() == name or it.getFullName() == name) {
+			 //Todo return the latest definition
+			if (it.getLocalName() == *name) { // or it.getFullName() == *name) {
 				return &it;
 			}
 		}
+		else if (it.type == BinaryOperation) {
+//			cout << "searching " << it.front().getLocalName() << endl;
+			if (it.size() > 0) {
+				if (auto variable = it.findVariable(name)) {
+					return variable;
+				}
+			}
+			//Todo find global variables
+		}
 	}
+//	if (parent) { //Was never used
+//		if (auto variable = parent->findVariable(name)){
+//			return variable;
+//		}
+//	}
 	return 0;
 }
 
 SourceTree* SourceTree::findNameSpace(std::string& name) {
 	for (auto &it: *this) {
 		if (it.type == Namespace) {
-			if (it.getLocalName() == name or it.getFullName() == name){ //Todo: maybe getFullName is unnessecary? It takes a lots of resources anyway
+			if (it.getLocalName() == name) { // or it.getFullName() == name){ //Todo: maybe getFullName is unnessecary? It takes a lots of resources anyway
 				return &it;
 			}
 		}
@@ -829,14 +937,17 @@ SourceTree* SourceTree::findBranchByType(DataType type) {
 	return 0;
 }
 
-SourceTree* SourceTree::getType() {
-	if (dataType) {
-		return dataType;
+SourceTree* SourceTree::getType(){
+	auto returnDataType = dataType;
+	if (!returnDataType) {
+		if (auto typeBranch = findBranchByType(Type)){
+			return typeBranch->dataType;
+		}
 	}
-	if (auto typeBranch = findBranchByType(Type)){
-		return typeBranch->dataType;
+	if (returnDataType == autoTypePointer) {
+//		cout << "reference to auto " << endl;
 	}
-	return 0;
+	return returnDataType;
 }
 
 SourceTree SourceTree::CreateFromString(std::string source) {

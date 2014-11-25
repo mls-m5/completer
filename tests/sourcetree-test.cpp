@@ -32,7 +32,7 @@ TEST_CASE("second pass"){
 	stringstream ss("int main(int argc, char **argv)\n"
 			"{ \n"
 			" int x;\n"
-			" cout << \"hello world\" << endl;\n"
+			" cout << \"hello world\" << \"tjoho\" << endl;\n"
 			" return 0;\n"
 			" }\n");
 
@@ -53,6 +53,23 @@ TEST_CASE("basic data type"){
 	ASSERT_EQ(sourceTree.front().size(), 2);
 	ASSERT_EQ(sourceTree.front().front().type, SourceTree::Type);
 	ASSERT_EQ(sourceTree.front().back().type, SourceTree::DefinitionName);
+}
+
+
+
+TEST_CASE("variable declaration"){
+	auto st = SourceTree::CreateFromString(""
+			"int apa;"
+			"apa = apa + 1;"
+			"int bepa = 0;");
+
+	auto variable = st.findVariable("apa");
+	ASSERT(variable, "apa not found");
+
+	variable = st.findVariable("bepa");
+	ASSERT(variable, "bepa not found");
+
+	//Check that the second expression necognises the variable
 }
 
 
@@ -78,6 +95,7 @@ TEST_CASE("preprocessor command"){
 
 
 TEST_CASE("lambda functions"){
+	ERROR_NOT_IMPLEMENTED();
 	{
 		auto st = SourceTree::CreateFromString("[] (int x) {cout << \"hej\" << endl; } ");
 		ASSERT_EQ(st.front().type, SourceTree::LambdaFunction);
@@ -182,6 +200,16 @@ TEST_CASE("multiple character operator"){
 	ASSERT_EQ(sourceTree.front().type, SourceTree::Operator);
 }
 
+
+TEST_CASE("group expressions by operators") {
+	auto st = SourceTree::CreateFromString(
+			"int x = 2;"
+			"int y = 3;"
+			"int z = 3;"
+			"int apa = x + y + (z + x) * (z - x) ^ 2;"
+			);
+	ERROR_NOT_IMPLEMENTED();
+}
 
 
 TEST_CASE("complete expression namespaces"){
@@ -305,6 +333,11 @@ TEST_CASE("complete auto expressions") {
 			"int apa;"
 			"auto bepa = apa;"
 	);
+
+	auto ret = st.findVariable("bepa");
+	ASSERT(ret, "variable bepa not found");
+	ASSERT(ret->getType(), "bepa does not have a datatype");
+	ASSERT_EQ(ret->getType()->name, "int");
 	ERROR_NOT_IMPLEMENTED();
 }
 
@@ -312,7 +345,16 @@ TEST_CASE("complete auto expressions") {
 
 
 TEST_CASE("complete 'using' statement") {
-	ERROR_NOT_IMPLEMENTED()
+	auto st = SourceTree::CreateFromString(
+			"namespace Apa {"
+			"	int apa;"
+			"}"
+			"using namespace Apa;"
+			);
+	auto ret = st.findVariable("apa");
+
+	ERROR_NOT_IMPLEMENTED();
+	ASSERT(ret, "variable not found");
 }
 
 

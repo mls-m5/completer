@@ -30,10 +30,20 @@ inline int runTests(){
 	for (auto it: testMap){
 		cout << "--- running test " << it.first << " ---" << endl;
 		test_result = 0;
-		it.second();
+		try {
+			it.second();
+		}
+		catch (...) {
+			std::cerr << "error" << endl;
+			test_result = -2;
+		}
 		if (test_result == -1) {
 			cout << " --> not impl" << endl << endl;
 			test_results[it.first] = "not implemented";
+		}
+		if (test_result == -2) {
+			cout << " --> crashed" << endl << endl;
+			test_results[it.first] = "crashed!";
 		}
 		else if (test_result){
 			cout << " --> failed" << endl << endl;
