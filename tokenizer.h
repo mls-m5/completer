@@ -7,6 +7,7 @@
 
 #pragma once
 #include <iostream>
+#include <list>
 #include <string>
 
 class Token: public std::string{
@@ -45,5 +46,6 @@ public:
 
 namespace Tokenizer {
 	Token GetNextToken(std::istream& stream);
+	std::list<Token> splitStringToToken(std::string);
 };
 

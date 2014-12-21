@@ -222,3 +222,13 @@ Token Tokenizer::GetNextToken(std::istream& stream) {
 
 	return Token(ss.str(), Token::None);
 }
+
+std::list<Token> Tokenizer::splitStringToToken(std::string string) {
+	std::istringstream stream(string);
+	std::list<Token> ret;
+	while (stream) {
+		auto token = GetNextToken(stream);
+		ret.push_back(token);
+	}
+	return ret;
+}

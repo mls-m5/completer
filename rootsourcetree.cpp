@@ -42,16 +42,20 @@ RootSourceTree::RootSourceTree() {
 
 void RootSourceTree::insertSymbol(SourceTree* sourceTree) {
 	_symbols.insert(pair<std::string, SourceTree*>(sourceTree->getLocalName(), sourceTree));
-	DEBUG cout << "inserting symbol " <<  sourceTree->getFullName() << " -> size " << _symbols.size() << endl;
+//	DEBUG cout << "inserting symbol " <<  sourceTree->getFullName() << " -> size " << _symbols.size() << endl;
 }
 
 
 
 std::list<SourceTree*> RootSourceTree::completeSymbol(std::string name,
 		std::string context, SourceTree* location) {
+
+	auto tokens = Tokenizer::splitStringToToken(name);
+	auto localNameToken = tokens.back();
+
 	std::list<SourceTree*> found;
 	for (auto it: _symbols) {
-		if (it.first.compare(0, name.size(), name) == 0) {
+		if (it.first.compare(0, localNameToken.size(), localNameToken) == 0) {
 			found.push_back(it.second);
 		}
 	}
@@ -63,7 +67,12 @@ std::list<SourceTree*> RootSourceTree::completeSymbol(std::string name,
 
 std::list<SourceTree*> RootSourceTree::findSymbol(std::string name,
 		std::string context, SourceTree* location, SourceTree::DataType type) {
-	auto foundRange = _symbols.equal_range(name);
+	auto tokens = Tokenizer::splitStringToToken(name);
+	cout << "tokens to search" << endl;
+	for (auto &it: tokens) {
+		cout << it << endl;
+	}
+	auto foundRange = _symbols.equal_range(tokens.back());
 	std::list<SourceTree*> retList;
 	for (auto it = foundRange.first; it != foundRange.second; ++it) {
 		if (type != SourceTree::None and type != it->second->type()) {

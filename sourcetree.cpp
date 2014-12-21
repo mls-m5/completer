@@ -12,7 +12,7 @@
 #include <map>
 #include <sstream>
 
-#define PRINT_DEBUG true
+#define PRINT_DEBUG false
 #include "common.h"
 
 #include "binaryoperators.h"
@@ -96,14 +96,14 @@ FilePosition SourceTree::parse(std::istream& stream,
 			push_back(SourceTree(token, ComaOperator, this));
 		} else if (token == "{") {
 			push_back(SourceTree(token, BraceBlock, this));
-			cout << "new braceblock" << endl;
+			DEBUG cout << "new braceblock" << endl;
 			filePosition = back().parse(stream, filePosition);
 		} else if (token == "(") {
-			cout << "new paranthesis block" << endl;
+			DEBUG cout << "new paranthesis block" << endl;
 			push_back(SourceTree(token, ParanthesisBlock, this));
 			filePosition = back().parse(stream, filePosition);
 		} else if (token == "[") {
-			cout << "new bracket block" << endl;
+			DEBUG cout << "new bracket block" << endl;
 			push_back(SourceTree(token, BracketBlock, this));
 			filePosition = back().parse(stream, filePosition);
 		} else if (token == "->" or token == "::" or token == ".") {
@@ -115,7 +115,7 @@ FilePosition SourceTree::parse(std::istream& stream,
 				token = Tokenizer::GetNextToken(stream);
 				filePosition += token;
 			}
-			cout << "new token: " << back()._name << endl;
+			DEBUG cout << "new token: " << back()._name << endl;
 			continue;
 
 		} else if (token.type == Token::KeyWord and token == "template") {
@@ -126,7 +126,7 @@ FilePosition SourceTree::parse(std::istream& stream,
 				filePosition += token;
 			}
 			if (token == "<") {
-				cout << "new template block" << endl;
+				DEBUG cout << "new template block" << endl;
 				push_back(SourceTree(token, TemplateBlock, this));
 				filePosition = back().parse(stream, filePosition);
 			} else {
@@ -134,20 +134,20 @@ FilePosition SourceTree::parse(std::istream& stream,
 				break;
 			}
 		} else if (_type == BraceBlock and token == "}") {
-			cout << "end of scope" << endl;
+			DEBUG cout << "end of scope" << endl;
 			break;
 		} else if (_type == ParanthesisBlock and token == ")") {
-			cout << "end of scope" << endl;
+			DEBUG cout << "end of scope" << endl;
 			break;
 		} else if (_type == BracketBlock and token == "]") {
-			cout << "end of brackets" << endl;
+			DEBUG cout << "end of brackets" << endl;
 			break;
 		} else if (_type == TemplateBlock and token == ">") {
-			cout << "end of template" << endl;
+			DEBUG cout << "end of template" << endl;
 			break;
 		} else if (_type == TemplateBlock and token == ">>") {
 			stream.unget();
-			cout << "end of template double >>" << endl;
+			DEBUG cout << "end of template double >>" << endl;
 			break;
 		} else {
 			push_back(
@@ -216,9 +216,7 @@ void SourceTree::print(std::ostream& stream, int level) {
 	}
 
 	if (auto tmpDataType = getType()) {
-		if (tmpDataType) {
-			stream << ", datatype: " << tmpDataType->getFullName();
-		}
+		stream << ", datatype: " << tmpDataType->getFullName();
 	}
 
 	stream << endl;
@@ -254,7 +252,7 @@ bool comparePattern(const T &st, const U &pattern) {
 
 void SourceTree::checkFieldForNames(iterator &it) {
 	if (auto tmpType = findDataType(it->_name)) {
-		cout << "datatype " << it->_name << endl;
+		DEBUG cout << "datatype " << it->_name << endl;
 		it->_type = Type;
 		it->dataType = tmpType;
 
@@ -367,11 +365,11 @@ void SourceTree::secondPass() {
 		} else if (it->_name.type == Token::Digit) {
 			it->type(Digit);
 		} else if (it->_name.type == Token::PreprocessorCommand) {
-			cout << "skipping preprocessor command" << endl;
+			DEBUG cout << "skipping preprocessor command" << endl;
 			eraseFromStatement()
 			continue;
 		} else if (it->_name == "static") {
-			cout << "do not handle static keyword.. skipping" << endl;
+			DEBUG cout << "do not handle static keyword.. skipping" << endl;
 			eraseFromStatement()
 			continue;
 		}
@@ -399,13 +397,13 @@ void SourceTree::secondPass() {
 			}
 			it = erase(it); //Skip semicolon
 			endOfStatement()
-			cout << "end of statement" << endl;
+			DEBUG cout << "end of statement" << endl;
 			continue;
 		} else {
 			++it;
 			for (auto &pattern : patternInterpretations) {
 				if (pattern.tryGroupExpressions(this, statementBeginning, it)) {
-					cout << "grouped pattern " << pattern._groupName << endl;
+					DEBUG cout << "grouped pattern " << pattern._groupName << endl;
 					if (pattern.needSemicolon == false) {
 						//Some expressions that do not need semicolon
 						endOfStatement();

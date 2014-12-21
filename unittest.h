@@ -46,12 +46,12 @@ inline int runTests(){
 			test_results[it.first] = "crashed!";
 		}
 		else if (test_result){
-			cout << " --> failed" << endl << endl;
+			cout << " --> failed" << endl << endl << endl << endl;
 			numFailed ++;
 			test_results[it.first] = "failed";
 		}
 		else{
-			cout << " --> success " << endl << endl;
+			cout << " --> success " << endl << endl << endl << endl;
 			test_results[it.first] = "succeded";
 			numSucceded ++;
 		}

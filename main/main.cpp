@@ -36,6 +36,8 @@ int completeSymbol(istream &stream, std::string expression){
 
 	for (auto it: completionList) {
 		cout << "completion : " << it->getFullName() << endl;
+		cout << "info: " << it->getTypeName() << ", " <<
+				(it->getType() ? it->getType()->getFullName() : std::string(""))  << endl;
 	}
 
 	return 0;

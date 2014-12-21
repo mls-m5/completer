@@ -36,7 +36,7 @@ TEST_CASE("complete auto expressions") {
 
 
 
-TEST_CASE("complete 'using' statement") {
+TEST_CASE("findsymbol with 'using' statement") {
 	auto st = RootSourceTree::CreateFromString(
 			"namespace Apa {"
 			"	int apa;"
@@ -60,6 +60,19 @@ TEST_CASE("complete 'using' statement") {
 	}
 
 	{
+		auto ret = st.findSymbol("Apa::apa", "", 0, SourceTree::VariableDeclaration);
+
+		cout << "found symbols when searching 'Apa::apa'" << endl;
+		for (auto it: ret) {
+			cout << it->getFullName() << endl;
+		}
+		cout << endl;
+
+		ASSERT(ret.size() == 1, "variable not found");
+	}
+
+
+	{
 		auto ret = st.findSymbol("bepa", "", 0, SourceTree::VariableDeclaration);
 
 		cout << "found symbols when searching 'bepa'" << endl;
@@ -69,6 +82,7 @@ TEST_CASE("complete 'using' statement") {
 		cout << endl;
 		ASSERT(ret.size() == 0, "variable bepa is found but should not be in public namespace");
 	}
+
 
 	ERROR_NOT_IMPLEMENTED();
 }
@@ -117,6 +131,8 @@ TEST_CASE("complete complex cases") {
 			"Apa::Apa apa;"
 			"Apa::Apa::Bepa bepa;"
 	);
+
+	st.printSymbols();
 
 	auto ret = st.completeSymbol("Apa::Apa::ap");
 	ASSERT_GT(ret.size(), 0);
