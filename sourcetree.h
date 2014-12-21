@@ -18,7 +18,7 @@ struct FilePosition {
 		line = 1;
 		column = 1;
 	}
-	void operator += (std::string &str);
+	void operator +=(std::string &str);
 
 	int line, column;
 };
@@ -26,9 +26,8 @@ struct FilePosition {
 class SourceContent {
 public:
 
-	enum ContentType{
-		None,
-		DataType,
+	enum ContentType {
+		None, DataType,
 	};
 
 	ContentType type = None;
@@ -37,7 +36,7 @@ public:
 
 class DataTypeContent: public SourceContent {
 public:
-	DataTypeContent(){
+	DataTypeContent() {
 		type = DataType;
 	}
 	std::string name;
@@ -45,7 +44,7 @@ public:
 
 class SourceTree: public std::list<SourceTree> {
 public:
-	enum DataType{
+	enum DataType {
 		None,
 		Type,
 		Variable,
@@ -58,7 +57,6 @@ public:
 		VariableDeclaration,
 		DefinitionName,
 		DeclarationName,
-//		VariableDeclarationAndInitialization,
 		FunctionDeclaration,
 		FunctionDefinition,
 		LambdaFunction,
@@ -96,18 +94,27 @@ public:
 		TemplateBlock,
 	};
 	SourceTree();
-	SourceTree(Token name, DataType type): name(name), type(type) {}
+	SourceTree(Token name, DataType type, SourceTree *parent) :
+			_name(name), _type(type), _parent(parent) {
+		if (_parent) {
+			_root = _parent->_root;
+		}
+	}
 	virtual ~SourceTree();
 
-	FilePosition parse(std::istream &stream, FilePosition startPos = FilePosition());
+	FilePosition parse(std::istream &stream, FilePosition startPos =
+			FilePosition());
 	void secondPass();
 	void checkFieldForNames(iterator &it);
 	void groupExpressionsWithOperators(iterator to, int count);
 	SourceTree::iterator groupExpressions(SourceTree::iterator last, int count);
-	SourceTree::iterator groupExpressions(SourceTree::iterator first, SourceTree::iterator last);
+	SourceTree::iterator groupExpressions(SourceTree::iterator first,
+			SourceTree::iterator last);
 
-	bool tryGroupExpressions(iterator &it, std::vector<SourceTree*> &unprocessedExpressions,
-			const std::vector<DataType> &pattern, DataType resultingType, const std::vector<DataType> &replacementPattern);
+	bool tryGroupExpressions(iterator &it,
+			std::vector<SourceTree*> &unprocessedExpressions,
+			const std::vector<DataType> &pattern, DataType resultingType,
+			const std::vector<DataType> &replacementPattern);
 
 	void print(std::ostream &stream, int level);
 	std::string getFullName() const;
@@ -127,15 +134,28 @@ public:
 	static SourceTree *FindBasicType(std::string &name);
 	SourceTree *getType();
 
-	//For testing mainly
-	static SourceTree CreateFromString(std::string);
+	//properties
+	DataType type() const {
+		return _type;
+	}
+	void type (DataType t); //Handles registration to symbol list at root
 
-	Token name = Token("", Token::None);
+	inline const Token &name() {
+		return _name;
+	}
+
+	//public variables
+	Token _name = Token("", Token::None);
 	std::shared_ptr<SourceContent> content = 0;
-	DataType type = Type;
 	SourceTree* dataType = 0;
 	int pointerDepth = 0;
 	bool hidden = false;
-	SourceTree *parent = 0;
+
+
+protected:
+	SourceTree *_parent = 0;
+	class RootSourceTree *_root = 0;
+	DataType _type = Type;
+	bool _isSymbol = false; //if the class should be added to the symbol map
 };
 

@@ -6,15 +6,18 @@
  */
 
 #include "sourcetree.h"
+#include "rootsourcetree.h"
 #include "tokenizer.h"
 #include <fstream>
 #include <map>
 #include <sstream>
 
 #define PRINT_DEBUG true
-#define DEBUG if(PRINT_DEBUG)
+#include "common.h"
 
 #include "binaryoperators.h"
+#include "conversionstrings.h"
+#include "replacementrule.h"
 using namespace std;
 
 list<SourceTree*> basicTypes;
@@ -35,204 +38,6 @@ static const vector<string> basicTypeNames = {
 		"char",
 };
 
-vector<string> controlStatements = {
-		"if",
-		"while",
-		"for",
-		"switch",
-};
-
-//For converting string to type
-map<string, SourceTree::DataType> nameInterpretations = {
-		{"if", SourceTree::ControlStatementKeyword},
-		{"while", SourceTree::ControlStatementKeyword},
-		{"for", SourceTree::ControlStatementKeyword},
-		{"switch", SourceTree::ControlStatementKeyword},
-		{"class", SourceTree::ClassKeyword},
-		{"template", SourceTree::TemplateKeyword},
-		{"struct", SourceTree::StructKeyword},
-		{"return", SourceTree::ReturnKeyword},
-		{"new", SourceTree::NewKeyword},
-		{"delete", SourceTree::DeleteKeyword},
-		{"namespace", SourceTree::NamespaceKeyWord},
-
-		{"+", SourceTree::Operator},
-		{"++", SourceTree::Operator},
-		{"-", SourceTree::Operator},
-		{"--", SourceTree::Operator},
-		{",", SourceTree::ComaOperator},
-		{";", SourceTree::Semicolon},
-		{"=", SourceTree::Equals},
-		{"::", SourceTree::ScopeResolution},
-		{"->", SourceTree::ElementSelectionThroughPointer},
-		{".", SourceTree::ElementSelectionThroughPointer},
-
-};
-
-//For converting type to string
-const map<SourceTree::DataType, string> typeNameStrings = {
-		{SourceTree::Equals, "equals"},
-		{SourceTree::Raw, "raw"},
-		{SourceTree::ClassKeyword, "class keyword"},
-		{SourceTree::Type, "type"},
-		{SourceTree::ControlStatementKeyword, "control statement keyword"},
-		{SourceTree::ReturnKeyword, "return keyword"},
-		{SourceTree::Operator, "operator"},
-		{SourceTree::DeclarationName, "declaration name"},
-		{SourceTree::DefinitionName, "name"},
-		{SourceTree::NamespaceKeyWord, "namespace keyword"},
-		{SourceTree::Namespace, "namespace"},
-		{SourceTree::Variable, "variable"},
-		{SourceTree::Digit, "digit"},
-		{SourceTree::BinaryOperation, "binary operation"},
-};
-
-typedef const vector<SourceTree::DataType> patternType;
-
-patternType controlStatementPattern = {
-		SourceTree::ControlStatementKeyword,
-		SourceTree::ParanthesisBlock,
-		SourceTree::BraceBlock
-};
-
-patternType anonymousClassDeclarationPattern = {
-		SourceTree::ClassKeyword,
-		SourceTree::BraceBlock
-};
-
-patternType variableDeclarationAndAssignmentPattern = {
-		SourceTree::VariableDeclaration,
-		SourceTree::Equals,
-};
-
-struct replacementRule {
-	patternType first;
-	SourceTree::DataType second;
-	patternType replacementPattern;
-};
-
-std::vector<replacementRule> patternInterpretations = {
-		{{
-				SourceTree::Type,
-				SourceTree::Raw,
-		},
-				SourceTree::VariableDeclaration,
-				{
-						SourceTree::Type,
-						SourceTree::DefinitionName
-				}
-		},
-
-		{anonymousClassDeclarationPattern, SourceTree::ClassDeclaration},
-		{{
-
-				SourceTree::ClassKeyword,
-				SourceTree::Raw,
-				SourceTree::BraceBlock
-		},
-				SourceTree::ClassDeclaration,
-				{
-						SourceTree::ClassKeyword,
-						SourceTree::DeclarationName,
-						SourceTree::BraceBlock
-				}
-		},
-		//Templated class
-		{{
-				SourceTree::TemplateBlock,
-				SourceTree::ClassKeyword,
-				SourceTree::Raw,
-				SourceTree::BraceBlock
-		},
-				SourceTree::ClassDeclaration,
-				{
-//						SourceTree::TemplateBlock,
-//						SourceTree::ClassKeyword,
-//						SourceTree::DeclarationName,
-//						SourceTree::BraceBlock,
-						SourceTree::TemplateBlock,
-						SourceTree::ClassKeyword,
-						SourceTree::DeclarationName,
-						SourceTree::BraceBlock,
-				}
-		},
-
-		{{
-
-				SourceTree::StructKeyword,
-				SourceTree::Raw,
-				SourceTree::BraceBlock
-		},
-				SourceTree::StructDeclaration,
-				{
-						SourceTree::StructKeyword,
-						SourceTree::DeclarationName,
-						SourceTree::BraceBlock
-				}
-		},
-
-		//Templated struct
-		{{
-				SourceTree::TemplateBlock,
-				SourceTree::StructKeyword,
-				SourceTree::Raw,
-				SourceTree::BraceBlock
-		},
-				SourceTree::StructDeclaration,
-				{
-						SourceTree::TemplateBlock,
-						SourceTree::StructKeyword,
-						SourceTree::DeclarationName,
-						SourceTree::BraceBlock
-				}
-		},
-
-		{controlStatementPattern, SourceTree::ControlStatement},
-
-		//Namespace
-		{{
-				SourceTree::NamespaceKeyWord,
-				SourceTree::Raw,
-				SourceTree::BraceBlock,
-		},
-				SourceTree::Namespace,
-				{
-						SourceTree::NamespaceKeyWord,
-						SourceTree::DefinitionName,
-						SourceTree::BraceBlock,
-				}
-		},
-
-//		{{
-//				SourceTree::VariableDeclaration,
-//				SourceTree::Equals
-//		}, //Probably another pattern in the future
-//				SourceTree::AssignmentStatement
-//		},
-
-		{{
-			SourceTree::VariableDeclaration,
-			SourceTree::ParanthesisBlock,
-		},
-			SourceTree::FunctionDeclaration
-		},
-
-		{{
-			SourceTree::FunctionDeclaration,
-			SourceTree::BraceBlock,
-		},
-			SourceTree::FunctionDefinition,
-		},
-
-
-		{{
-			SourceTree::BracketBlock, //Todo make sure this is identified even when it is not at an end of a line
-			SourceTree::ParanthesisBlock,
-			SourceTree::BraceBlock,
-		},
-			SourceTree::LambdaFunction,
-		},
-};
 
 //For initializing stuff
 static class InitializerClass{
@@ -241,8 +46,8 @@ public:
 		if (!basicTypes.size()){
 			for (auto &it: basicTypeNames){
 				auto typeAst = new SourceTree;
-				typeAst->type = SourceTree::Type;
-				typeAst->name = it;
+				typeAst->type(SourceTree::Type);
+				typeAst->_name = it;
 				basicTypes.push_back(typeAst);
 				if (it == "auto") {
 					autoTypePointer = basicTypes.back();
@@ -263,11 +68,23 @@ bool findInContainer(T container, std::string str){
 	return false;
 }
 
+
+
+
+
 SourceTree::SourceTree() {
 }
 
+
+
+
+
 SourceTree::~SourceTree() {
 }
+
+
+
+
 
 FilePosition SourceTree::parse(std::istream& stream, FilePosition fileIterator) {
 	FilePosition filePosition = fileIterator;
@@ -283,36 +100,36 @@ FilePosition SourceTree::parse(std::istream& stream, FilePosition fileIterator) 
 			continue;
 		}
 		else if (token == ";"){
-			push_back(SourceTree(token, Semicolon));
+			push_back(SourceTree(token, Semicolon, this));
 		}
 		else if (token == ","){
-			push_back(SourceTree(token, ComaOperator));
+			push_back(SourceTree(token, ComaOperator, this));
 		}
 		else if (token == "{"){
-			push_back(SourceTree(token, BraceBlock));
+			push_back(SourceTree(token, BraceBlock, this));
 			cout << "new braceblock" << endl;
 			filePosition = back().parse(stream, filePosition);
 		}
 		else if (token == "("){
 			cout << "new paranthesis block" << endl;
-			push_back(SourceTree(token, ParanthesisBlock));
+			push_back(SourceTree(token, ParanthesisBlock, this));
 			filePosition = back().parse(stream, filePosition);
 		}
 		else if (token == "["){
 			cout << "new bracket block" << endl;
-			push_back(SourceTree(token, BracketBlock));
+			push_back(SourceTree(token, BracketBlock, this));
 			filePosition = back().parse(stream, filePosition);
 		}
 		else if (token == "->" or token == "::" or token == "."){
-			back().name += token;
+			back()._name += token;
 			token = Tokenizer::GetNextToken(stream);
 			filePosition += token;
 			if (token.type == Token::Word) {
-				back().name += token;
+				back()._name += token;
 				token = Tokenizer::GetNextToken(stream);
 				filePosition += token;
 			}
-			cout << "new token: " << back().name << endl;
+			cout << "new token: " << back()._name << endl;
 			continue;
 
 		}
@@ -325,7 +142,7 @@ FilePosition SourceTree::parse(std::istream& stream, FilePosition fileIterator) 
 			}
 			if (token == "<"){
 				cout << "new template block" << endl;
-				push_back(SourceTree(token, TemplateBlock));
+				push_back(SourceTree(token, TemplateBlock, this));
 				filePosition = back().parse(stream, filePosition);
 			}
 			else {
@@ -333,30 +150,30 @@ FilePosition SourceTree::parse(std::istream& stream, FilePosition fileIterator) 
 				break;
 			}
 		}
-		else if (type == BraceBlock and token == "}"){
+		else if (_type == BraceBlock and token == "}"){
 			cout << "end of scope" << endl;
 			break;
 		}
-		else if (type == ParanthesisBlock and token == ")"){
+		else if (_type == ParanthesisBlock and token == ")"){
 			cout << "end of scope" << endl;
 			break;
 		}
-		else if (type == BracketBlock and token == "]"){
+		else if (_type == BracketBlock and token == "]"){
 			cout << "end of brackets" << endl;
 			break;
 		}
-		else if (type == TemplateBlock and token == ">"){
+		else if (_type == TemplateBlock and token == ">"){
 			cout << "end of template" << endl;
 			break;
 		}
-		else if (type == TemplateBlock and token == ">>"){
+		else if (_type == TemplateBlock and token == ">>"){
 			stream.unget();
 			cout << "end of template double >>" << endl;
 			break;
 		}
 		else{
 			push_back(SourceTree(token,
-					 (token.type == Token::OperatorOrPunctuator)? Operator: Raw));
+					 (token.type == Token::OperatorOrPunctuator)? Operator: Raw, this));
 		}
 
 		token = Tokenizer::GetNextToken(stream);
@@ -365,6 +182,10 @@ FilePosition SourceTree::parse(std::istream& stream, FilePosition fileIterator) 
 
 	return filePosition;
 }
+
+
+
+
 
 void FilePosition::operator +=(std::string& str) {
 	for (auto c: str){
@@ -378,20 +199,28 @@ void FilePosition::operator +=(std::string& str) {
 	}
 }
 
+
+
+
+
 void intent(ostream & stream, int level){
 	for (int i = 0; i < level; ++i){
 		stream << "    ";
 	}
 }
 
+
+
+
+
 void SourceTree::print(std::ostream& stream, int level) {
 
 	intent(stream, level);
-	if (name.empty()){
+	if (_name.empty()){
 		stream << "-";
 	}
 	else {
-		stream << name;
+		stream << _name;
 	}
 	auto fullName = getFullName();
 	if (!fullName.empty()){
@@ -399,8 +228,8 @@ void SourceTree::print(std::ostream& stream, int level) {
 	}
 
 
-	if (auto f = typeNameStrings.find(type) != typeNameStrings.end()){
-		stream << " : " << typeNameStrings.at(type);
+	if (auto f = typeNameStrings.find(_type) != typeNameStrings.end()){
+		stream << " : " << typeNameStrings.at(_type);
 	}
 
 	if (pointerDepth) {
@@ -417,7 +246,7 @@ void SourceTree::print(std::ostream& stream, int level) {
 //		intent(stream, level);
 		stream << " : start group ";
 
-		switch (type){
+		switch (_type){
 		case ParanthesisBlock:
 			stream << "()";
 			break;
@@ -431,7 +260,7 @@ void SourceTree::print(std::ostream& stream, int level) {
 			stream << "variable definition";
 			break;
 		case ControlStatement:
-			stream << front().name;
+			stream << front()._name;
 			break;
 		case AssignmentStatement:
 			stream << "assignment";
@@ -455,7 +284,7 @@ void SourceTree::print(std::ostream& stream, int level) {
 			stream << "lambda function";
 			break;
 		default:
-			stream << "type " << type;
+			stream << "type " << _type;
 			break;
 		}
 	}
@@ -471,13 +300,15 @@ void SourceTree::print(std::ostream& stream, int level) {
 
 
 
+
+
 template <class T, class U>
 bool comparePattern(const T &st, const U &pattern){
 	if (pattern.size() != st.size()){
 		return false;
 	}
 	for (int i = 0; i < pattern.size(); ++i){
-		if (st[i]->type != pattern[i]){
+		if (st[i]->type() != pattern[i]){
 			return false;
 		}
 	}
@@ -485,21 +316,25 @@ bool comparePattern(const T &st, const U &pattern){
 }
 
 
+
+
+
+
 void SourceTree::checkFieldForNames(iterator &it) {
-	if (auto tmpType = findDataType(it->name)){
-		cout << "datatype " << it->name << endl;
-		it->type = Type;
+	if (auto tmpType = findDataType(it->_name)){
+		cout << "datatype " << it->_name << endl;
+		it->_type = Type;
 		it->dataType = tmpType;
 
 		//Start chunking together data types that consists of several words
 		auto jt = it;
 		++jt;
-		if (FindBasicType(it->name)){
+		if (FindBasicType(it->_name)){
 			while (jt != end()){
-				if (auto tmpType2 = FindBasicType(jt->name)){
+				if (auto tmpType2 = FindBasicType(jt->_name)){
 
-					it->name += (" " + jt->name);
-					cout << "multi word data type " << it->name << endl;
+					it->_name += (" " + jt->_name);
+					cout << "multi word data type " << it->_name << endl;
 					it->dataType = tmpType2;
 
 					jt = erase(jt);
@@ -511,16 +346,20 @@ void SourceTree::checkFieldForNames(iterator &it) {
 		}
 
 		//Count pointer depth
-		while (jt != end() and jt->name == "*"){
+		while (jt != end() and jt->_name == "*"){
 			++it->pointerDepth;
 			jt = erase(jt);
 		}
 	}
-	else if (auto variable = findVariable(&it->name)){
-		it->type = Variable;
+	else if (auto variable = findVariable(&it->_name)){
+		it->_type = Variable;
 		it->dataType = variable->getType();
 	}
 }
+
+
+
+
 
 
 void SourceTree::groupExpressionsWithOperators(iterator to, int count) {
@@ -544,22 +383,22 @@ void SourceTree::groupExpressionsWithOperators(iterator to, int count) {
 	for (const auto &it: orderedBinaryOperators) {
 		for (auto op = start; op != stop; ++op) {
 //			cout << "checking " << op->name << " to " << it << endl;
-			if (op->name == it) {
+			if (op->_name == it) {
 				auto first = op;
 				auto last = op;
 				--first;
 				++last;
-				cout << "grouping '" << first->name << "' '" << op->name << "' '" << last->name << "'" << endl;
+				cout << "grouping '" << first->_name << "' '" << op->_name << "' '" << last->_name << "'" << endl;
 
 				if (op == start) {
 					op = groupExpressions(first, last);
-					op->type = BinaryOperation;
+					op->type(BinaryOperation);
 					start = op;
 					++start; //The first expression will not be a operator
 				}
 				else {
 					op = groupExpressions(first, last);
-					op->type = BinaryOperation;
+					op->type(BinaryOperation);
 				}
 //				print(cout, 0);
 				if (last == stop){
@@ -576,6 +415,11 @@ void SourceTree::groupExpressionsWithOperators(iterator to, int count) {
 	}
 }
 
+
+
+
+
+
 void SourceTree::secondPass() {
 	vector<SourceTree*> unprocessedExpressions; //A list of expressions that is not yet used
 	unprocessedExpressions.reserve(5);
@@ -585,19 +429,19 @@ void SourceTree::secondPass() {
 		if (it->size()){
 			it->secondPass();
 		}
-		if ((f = nameInterpretations.find(it->name)) != nameInterpretations.end()){
+		if ((f = nameInterpretations.find(it->_name)) != nameInterpretations.end()){
 			//eg interprets "=" to type Equals and so on
-			it->type = f->second;
+			it->type(f->second);
 		}
-		else if (it->name.type == Token::Digit){
-			it->type = Digit;
+		else if (it->_name.type == Token::Digit){
+			it->type(Digit);
 		}
-		else if (it->name.type == Token::PreprocessorCommand){
+		else if (it->_name.type == Token::PreprocessorCommand){
 			cout << "skipping preprocessor command" << endl;
 			it = erase(it);
 			continue;
 		}
-		else if (it->name == "static") {
+		else if (it->_name == "static") {
 			cout << "do not handle static keyword.. skipping" << endl;
 			it = erase(it);
 			continue;
@@ -605,7 +449,7 @@ void SourceTree::secondPass() {
 //		else if (it->type == BraceBlock) {
 //			//Do nothing this was to avoid braces to be interpreted as variable declarations
 //		}
-		else if (it->type == Raw) {
+		else if (it->type() == Raw) {
 			checkFieldForNames(it);
 		}
 
@@ -619,10 +463,10 @@ void SourceTree::secondPass() {
 
 
 		//Some expressions that do not need semicolon
-		if (it->type == Namespace) {
+		if (it->type() == Namespace) {
 			unprocessedExpressions.clear();
 		}
-		if (it->type == Semicolon or it->type == ComaOperator){
+		if (it->type() == Semicolon or it->type() == ComaOperator){
 			//Todo: Handle this
 //			cout << "size : " << unprocessedExpressions.size() << endl;
 //			for (auto &it: unprocessedExpressions) {
@@ -631,7 +475,7 @@ void SourceTree::secondPass() {
 //			cout << endl;
 			bool containsOperators = false;
 			for (auto it2: unprocessedExpressions){
-				if (it2->type == Operator or it2->type == Equals) {
+				if (it2->type() == Operator or it2->type() == Equals) {
 					containsOperators = true;
 				}
 			}
@@ -657,6 +501,10 @@ void SourceTree::secondPass() {
 	}
 }
 
+
+
+
+
 SourceTree* SourceTree::findDataType(std::string &name) {
 	if (name.empty()){
 		return 0;
@@ -666,43 +514,41 @@ SourceTree* SourceTree::findDataType(std::string &name) {
 		return st;
 	}
 	for (auto &it: *this){
-		if (it.type == Type or it.type == ClassDeclaration){
+		if (it.type() == Type or it.type() == ClassDeclaration){
 			if (it.getLocalName() == name or it.getFullName() == name){
 				return &it;
 			}
 		}
 	}
-	if (parent) {
-		st = parent->findDataType(name);
+	if (_parent) {
+		st = _parent->findDataType(name);
 	}
-	if (this->name == name){
+	if (this->_name == name){
 		return this;
 	}
 	return st;
 }
+
+
+
+
 
 SourceTree::iterator SourceTree::groupExpressions(SourceTree::iterator first, SourceTree::iterator last) {
 	SourceTree st;
 	++last; //last is not included by default
 
 	auto ret = insert(first, st);
-//	auto ret = first;
-//	--ret;
-	//splice moves the elements enstead of recreating and deleting
-	//this way it is possible to keep references (hopefully)
-	ret->splice(ret->begin(), *this, first, last);
 
-//	st.insert(st.begin(), first, last);
-//
-//	insert(first, st);
-//	auto ret = first;
-//	--ret;
-//	erase(first, last);
+	ret->splice(ret->begin(), *this, first, last);
 
 	ret->setParent(this);
 
 	return ret;
 }
+
+
+
+
 
 SourceTree::iterator SourceTree::groupExpressions(SourceTree::iterator last,
 		int count) {
@@ -713,6 +559,10 @@ SourceTree::iterator SourceTree::groupExpressions(SourceTree::iterator last,
 	return groupExpressions(first, last);
 }
 
+
+
+
+
 bool SourceTree::tryGroupExpressions(iterator &it, std::vector<SourceTree*> &unprocessedExpressions,
 		const std::vector<DataType> &pattern, DataType resultingType, const std::vector<DataType> &replacementPattern) {
 	if (comparePattern(unprocessedExpressions, pattern)){
@@ -722,10 +572,10 @@ bool SourceTree::tryGroupExpressions(iterator &it, std::vector<SourceTree*> &unp
 			//For example interprets which fields are name fields etc
 			auto replacementIterator = replacementPattern.begin();
 			for (auto jt = it->begin(); jt != it->end(); ++jt, ++replacementIterator){
-				jt->type = *replacementIterator;
+				jt->type(*replacementIterator);
 			}
 		}
-		it->type = resultingType;
+		it->type(resultingType);
 		unprocessedExpressions.clear();
 		unprocessedExpressions.push_back(&*it);
 		return true;
@@ -733,11 +583,15 @@ bool SourceTree::tryGroupExpressions(iterator &it, std::vector<SourceTree*> &unp
 	return false;
 }
 
+
+
+
+
 std::string SourceTree::getFullName() const {
-	if (not parent) {
+	if (not _parent) {
 		return getLocalName();
 	}
-	auto parentName = parent->getFullName();
+	auto parentName = _parent->getFullName();
 	if (parentName.empty()){
 		return getLocalName();
 	}
@@ -752,33 +606,52 @@ std::string SourceTree::getFullName() const {
 	}
 }
 
+
+
+
+
 std::string SourceTree::getLocalName() const {
 	for (auto &it: *this){
-		if (it.type == DeclarationName or it.type == DefinitionName){
-			return it.name;
+		if (it.type() == DeclarationName or it.type() == DefinitionName){
+			return it._name;
 		}
 	}
 	return "";
 }
 
+
+
+
 void SourceTree::setParent(SourceTree* parent) {
-	this->parent = parent;
+	this->_parent = parent;
+	if (parent) {
+		this->_root = parent->_root;
+	}
 	for (auto &it: *this){
 		it.setParent(this);
 	}
 }
+
+
+
+
 
 SourceTree* SourceTree::FindBasicType(std::string& name) {
 	if (name.empty()){
 		return 0;
 	}
 	for (auto &it: basicTypes){
-		if (it->name == name){
+		if (it->_name == name){
 			return it;
 		}
 	}
 	return 0;
 }
+
+
+
+
+
 std::list<SourceTree *> SourceTree::findExpressions(std::list<Token> tokens) {
 	std::list<SourceTree *> ret;
 	if (tokens.size() >= 2) {
@@ -836,6 +709,10 @@ std::list<SourceTree *> SourceTree::findExpressions(std::list<Token> tokens) {
 	return ret;
 }
 
+
+
+
+
 std::list<SourceTree*> SourceTree::completeExpression(std::string name) {
 	std::list<SourceTree *> ret;
 
@@ -891,15 +768,19 @@ std::list<SourceTree*> SourceTree::completeExpression(std::string name) {
 	return ret;
 }
 
+
+
+
+
 SourceTree* SourceTree::findVariable(const std::string* name) {
 	for (auto &it: *this) {
-		if (it.type == VariableDeclaration) {
+		if (it.type() == VariableDeclaration) {
 			 //Todo return the latest definition
 			if (it.getLocalName() == *name) { // or it.getFullName() == *name) {
 				return &it;
 			}
 		}
-		else if (it.type == BinaryOperation) {
+		else if (it.type() == BinaryOperation) {
 //			cout << "searching " << it.front().getLocalName() << endl;
 			if (it.size() > 0) {
 				if (auto variable = it.findVariable(name)) {
@@ -917,9 +798,13 @@ SourceTree* SourceTree::findVariable(const std::string* name) {
 	return 0;
 }
 
+
+
+
+
 SourceTree* SourceTree::findNameSpace(std::string& name) {
 	for (auto &it: *this) {
-		if (it.type == Namespace) {
+		if (it.type() == Namespace) {
 			if (it.getLocalName() == name) { // or it.getFullName() == name){ //Todo: maybe getFullName is unnessecary? It takes a lots of resources anyway
 				return &it;
 			}
@@ -928,14 +813,22 @@ SourceTree* SourceTree::findNameSpace(std::string& name) {
 	return 0;
 }
 
+
+
+
+
 SourceTree* SourceTree::findBranchByType(DataType type) {
 	for (auto &it: *this) {
-		if (it.type == type) {
+		if (it.type() == type) {
 			return &it;
 		}
 	}
 	return 0;
 }
+
+
+
+
 
 SourceTree* SourceTree::getType(){
 	auto returnDataType = dataType;
@@ -950,15 +843,32 @@ SourceTree* SourceTree::getType(){
 	return returnDataType;
 }
 
-SourceTree SourceTree::CreateFromString(std::string source) {
-	SourceTree sourceTree;
-	istringstream ss(source);
-	sourceTree.parse(ss);
-	sourceTree.secondPass();
-	DEBUG sourceTree.print(cout, 0);
-	return sourceTree; //This would be a waste if there was no move constructor :)
-}
+
+
 
 std::string SourceTree::getTypeName() const {
-	return typeNameStrings.at(type);
+	auto typeName = typeNameStrings.find(type());
+	if (typeName == typeNameStrings.end()){
+		return "unnamed type";
+	}
+	else {
+		return typeName->second;
+	}
+}
+
+void SourceTree::type(DataType t) {
+	_type = t;
+
+	if (_root) {
+		for (auto it: typesToRegister) {
+			if (it == t) {
+				if (_isSymbol) {
+					return; //symbol is alreadyregistered
+				}
+				else {
+					_root->insertSymbol(this);
+				}
+			}
+		}
+	}
 }
