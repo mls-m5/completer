@@ -190,16 +190,21 @@ void intent(ostream & stream, int level) {
 
 
 void SourceTree::print(std::ostream& stream, int level) {
-
 	intent(stream, level);
 	if (_name.empty()) {
 		stream << "-";
 	} else {
 		stream << _name;
 	}
-	auto fullName = getFullName();
-	if (!fullName.empty()) {
-		stream << " (" << fullName << ")";
+	if (isSymbol()) {
+		auto fullName = getFullName();
+		if (!fullName.empty()) {
+			stream << " (" << fullName << ")";
+		}
+	}
+
+	if (size()) {
+		stream << " group ";
 	}
 
 	if (auto f = typeNameStrings.find(_type) != typeNameStrings.end()) {
@@ -216,52 +221,6 @@ void SourceTree::print(std::ostream& stream, int level) {
 		}
 	}
 
-	if (size()) {
-//		intent(stream, level);
-		stream << " : start group ";
-
-		switch (_type) {
-		case ParanthesisBlock:
-			stream << "()";
-			break;
-		case BraceBlock:
-			stream << "{}";
-			break;
-		case BracketBlock:
-			stream << "[]";
-			break;
-		case VariableDeclaration:
-			stream << "variable definition";
-			break;
-		case ControlStatement:
-			stream << front()._name;
-			break;
-		case AssignmentStatement:
-			stream << "assignment";
-			break;
-		case ClassDeclaration:
-			stream << "class";
-			break;
-		case StructDeclaration:
-			stream << "struct";
-			break;
-		case TemplateBlock:
-			stream << "template";
-			break;
-		case FunctionDeclaration:
-			stream << "function declaration";
-			break;
-		case FunctionDefinition:
-			stream << "function definition";
-			break;
-		case LambdaFunction:
-			stream << "lambda function";
-			break;
-		default:
-			stream << "type " << _type;
-			break;
-		}
-	}
 	stream << endl;
 	for (auto &it : *this) {
 		it.print(stream, level + 1);
@@ -409,13 +368,11 @@ void SourceTree::secondPass() {
 			it->type(Digit);
 		} else if (it->_name.type == Token::PreprocessorCommand) {
 			cout << "skipping preprocessor command" << endl;
-//			it = erase(it);
 			eraseFromStatement()
 			continue;
 		} else if (it->_name == "static") {
 			cout << "do not handle static keyword.. skipping" << endl;
 			eraseFromStatement()
-//			it = erase(it);
 			continue;
 		}
 		else if (it->type() == Raw) {
@@ -456,9 +413,6 @@ void SourceTree::secondPass() {
 					break;
 				}
 			}
-//			if (statementBeginning->type() == Namespace) {
-//				endOfStatement();
-//			}
 			continue; //To avoid doing ++it twice
 		}
 		++it;
@@ -666,7 +620,9 @@ void SourceTree::type(DataType t) {
 				if (_isSymbol) {
 					return; //symbol is alreadyregistered
 				} else {
+					_isSymbol = true;
 					_root->insertSymbol(this);
+					break;
 				}
 			}
 		}

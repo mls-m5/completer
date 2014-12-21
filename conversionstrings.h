@@ -26,6 +26,9 @@ std::map<std::string, SourceTree::DataType> nameInterpretations = {
 		{"new", SourceTree::NewKeyword},
 		{"delete", SourceTree::DeleteKeyword},
 		{"namespace", SourceTree::NamespaceKeyWord},
+		{"public", SourceTree::PublicKeyword},
+		{"protected", SourceTree::ProtectedKeyword},
+		{"private", SourceTree::PrivateKeyword},
 
 		{"+", SourceTree::Operator},
 		{"++", SourceTree::Operator},
@@ -37,6 +40,7 @@ std::map<std::string, SourceTree::DataType> nameInterpretations = {
 		{"::", SourceTree::ScopeResolution},
 		{"->", SourceTree::ElementSelectionThroughPointer},
 		{".", SourceTree::ElementSelectionThroughPointer},
+		{":", SourceTree::Colon},
 
 };
 
@@ -56,6 +60,23 @@ const std::map<SourceTree::DataType, std::string> typeNameStrings = {
 		{SourceTree::Variable, "variable"},
 		{SourceTree::Digit, "digit"},
 		{SourceTree::BinaryOperation, "binary operation"},
+		{SourceTree::PublicKeyword, "public keyword"},
+		{SourceTree::ProtectedKeyword, "protected keyword"},
+		{SourceTree::PrivateKeyword, "private keyword"},
+
+		//Groups
+		{SourceTree::ParanthesisBlock , "()"},
+		{SourceTree::BraceBlock, "{}"},
+		{SourceTree::BracketBlock, "[]"},
+		{SourceTree::VariableDeclaration, "variable definition"},
+		{SourceTree::AssignmentStatement, "assignment"},
+		{SourceTree::ClassDeclaration, "class"},
+		{SourceTree::StructDeclaration, "struct"},
+		{SourceTree::TemplateBlock, "template"},
+		{SourceTree::FunctionDeclaration, "function declaration"},
+		{SourceTree::FunctionDefinition, "function definition"},
+		{SourceTree::LambdaFunction, "lambda function"},
+		{SourceTree::AccessModifiers, "access modifier"},
 };
 
 

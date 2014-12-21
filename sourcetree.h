@@ -69,6 +69,7 @@ public:
 
 		Semicolon,
 		ComaOperator,
+		Colon,
 		Equals,
 		ScopeResolution,
 		ElementSelectionThroughPointer,
@@ -92,6 +93,11 @@ public:
 		BracketBlock,
 		ParanthesisBlock,
 		TemplateBlock,
+
+		AccessModifiers,
+		PublicKeyword,
+		ProtectedKeyword,
+		PrivateKeyword,
 	};
 	SourceTree();
 	SourceTree(Token name, DataType type, SourceTree *parent) :
@@ -135,6 +141,10 @@ public:
 
 	inline const Token &name() {
 		return _name;
+	}
+
+	inline const bool isSymbol() {
+		return _isSymbol;
 	}
 
 	//public variables

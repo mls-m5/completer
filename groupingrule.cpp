@@ -14,16 +14,17 @@ static patternType controlStatementPattern = {
 static patternType anonymousClassDeclarationPattern = {
 		SourceTree::ClassKeyword, SourceTree::BraceBlock };
 
+//Eclipse messed up formating
 std::vector<GroupingRule> patternInterpretations =
 		{ { { SourceTree::Type, SourceTree::Raw, },
 				SourceTree::VariableDeclaration, { SourceTree::Type,
 						SourceTree::DefinitionName } },
 
 		{ anonymousClassDeclarationPattern, SourceTree::ClassDeclaration }, { {
-
-		SourceTree::ClassKeyword, SourceTree::Raw, SourceTree::BraceBlock },
-				SourceTree::ClassDeclaration, { SourceTree::ClassKeyword,
-						SourceTree::DeclarationName, SourceTree::BraceBlock } },
+				SourceTree::ClassKeyword, SourceTree::Raw,
+				SourceTree::BraceBlock }, SourceTree::ClassDeclaration, {
+				SourceTree::ClassKeyword, SourceTree::DeclarationName,
+				SourceTree::BraceBlock } },
 		//Templated class
 				{ { SourceTree::TemplateBlock, SourceTree::ClassKeyword,
 						SourceTree::Raw, SourceTree::BraceBlock },
@@ -60,7 +61,8 @@ std::vector<GroupingRule> patternInterpretations =
 				{ { SourceTree::NamespaceKeyWord, SourceTree::Raw,
 						SourceTree::BraceBlock, }, SourceTree::Namespace, {
 						SourceTree::NamespaceKeyWord,
-						SourceTree::DefinitionName, SourceTree::BraceBlock, }, true, false },
+						SourceTree::DefinitionName, SourceTree::BraceBlock, },
+						true, false },
 
 				{ { SourceTree::VariableDeclaration,
 						SourceTree::ParanthesisBlock, },
@@ -71,7 +73,10 @@ std::vector<GroupingRule> patternInterpretations =
 
 				{ { SourceTree::BracketBlock, //Todo make sure this is identified even when it is not at an end of a line
 						SourceTree::ParanthesisBlock, SourceTree::BraceBlock, },
-						SourceTree::LambdaFunction, }, };
+						SourceTree::LambdaFunction, },
+
+				{ { SourceTree::PublicKeyword, SourceTree::Colon },
+						SourceTree::AccessModifiers, {}, true, false },};
 
 bool GroupingRule::comparePattern(SourceTree::iterator begin,
 		SourceTree::iterator end, Range *range) {
@@ -98,7 +103,8 @@ bool GroupingRule::tryGroupExpressions(SourceTree* sourceTree,
 		SourceTree::iterator& begin, SourceTree::iterator& end) {
 	Range range; //Return from comparePattern
 	if (comparePattern(begin, end, &range)) {
-		auto it = groupExpressions(sourceTree, begin, end, range.begin, range.end);
+		auto it = groupExpressions(sourceTree, begin, end, range.begin,
+				range.end);
 		if (_first.size() == replacementPattern.size()) {
 			//Replace the identifier pattern with a new one
 			//For example interprets which fields are name fields etc
@@ -136,8 +142,7 @@ SourceTree::iterator GroupingRule::groupExpressions(SourceTree* owner,
 		end = begin;
 		++end;
 		statementEnd = end;
-	}
-	else {
+	} else {
 		end = begin;
 		++end;
 	}

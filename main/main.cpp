@@ -6,7 +6,7 @@
  */
 #include <fstream>
 #include <iostream>
-#include "../sourcetree.h"
+#include "../rootsourcetree.h"
 
 using namespace std;
 
@@ -29,10 +29,10 @@ int printAst(istream &stream){
 }
 
 int completeSymbol(istream &stream, std::string expression){
-	SourceTree st;
+	RootSourceTree st;
 	st.parse(stream, FilePosition());
 	st.secondPass();
-	auto completionList = st.completeExpression(expression);
+	auto completionList = st.completeSymbol(expression);
 
 	for (auto it: completionList) {
 		cout << "completion : " << it->getFullName() << endl;

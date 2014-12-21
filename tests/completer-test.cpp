@@ -77,7 +77,7 @@ TEST_CASE("find symbol") {
 	auto st = RootSourceTree::CreateFromString(
 			"namespace Apa {"
 			"	class Bepa {"
-//			"		public:"
+			"		public:"
 			"		int apa;"
 			"	};"
 			"	int cepa;"
