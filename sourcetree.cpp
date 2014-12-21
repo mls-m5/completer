@@ -491,6 +491,9 @@ std::string SourceTree::getLocalName() const {
 			return it._name;
 		}
 	}
+	if (_type == Type) {
+		return _name;
+	}
 	return "";
 }
 
@@ -585,7 +588,23 @@ SourceTree* SourceTree::getType() {
 	auto returnDataType = dataType;
 	if (!returnDataType) {
 		if (auto typeBranch = findBranchByType(Type)) {
-			return typeBranch->dataType;
+			if (typeBranch->dataType == autoTypePointer){
+				if (_parent) {
+					if (_parent->type() == BinaryOperation) {
+						auto assignmentValue = &_parent->back();
+						if (assignmentValue) {
+							return assignmentValue->dataType;
+						}
+					}
+					else{
+						cout << "auto is used, but does not refer to a variable with a type" << endl;
+						return 0;
+					}
+				}
+			}
+			else {
+				return typeBranch->dataType;
+			}
 		}
 	}
 	if (returnDataType == autoTypePointer) {

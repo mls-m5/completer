@@ -30,6 +30,7 @@ public:
 		type(type),
 		std::string(str){
 	}
+	void printLocation(std::ostream  *stream = 0);
 
 	std::string getStringContent(){
 		if (size() > 2){
@@ -41,7 +42,8 @@ public:
 	}
 
 	TokenType type = None;
-
+	int line = 0;
+	int row = 0;
 };
 
 namespace Tokenizer {

@@ -232,3 +232,10 @@ std::list<Token> Tokenizer::splitStringToToken(std::string string) {
 	}
 	return ret;
 }
+
+void Token::printLocation(std::ostream* stream) {
+	if (!stream) {
+		stream = &cout;
+	}
+	*stream << "fil xxx:" << "xx:xx" << endl; //Todo implemente location markers for tokens
+}

@@ -30,13 +30,12 @@ TEST_CASE("complete auto expressions") {
 	ASSERT(ret, "variable bepa not found");
 	ASSERT(ret->getType(), "bepa does not have a datatype");
 	ASSERT_EQ(ret->getType()->_name, "int");
-	ERROR_NOT_IMPLEMENTED();
 }
 
 
 
 
-TEST_CASE("findsymbol with 'using' statement") {
+TEST_CASE("find symbol with 'using' statement") {
 	auto st = RootSourceTree::CreateFromString(
 			"namespace Apa {"
 			"	int apa;"

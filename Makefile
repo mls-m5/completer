@@ -8,6 +8,7 @@ CFLAGS+=--std=c++11 -g -O0
 BIN=completer
 
 #first: tests/completer-test #to only build one test
+#first: tests/sourcetree-test
 
 all: $(OBJECTS) $(TEST_BIN) $(BIN)
 	@echo Klart
