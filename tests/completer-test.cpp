@@ -103,4 +103,62 @@ TEST_CASE("find symbol") {
 
 
 
+TEST_CASE("complete complex cases") {
+	auto st = RootSourceTree::CreateFromString(
+			"namespace Apa {"
+			"	class Apa {"
+			"		static int apa;"
+			"		int bepa;"
+			"		class Bepa {"
+			"			int cepa;"
+			"		};"
+			"	};"
+			"}"
+			"Apa::Apa apa;"
+			"Apa::Apa::Bepa bepa;"
+	);
+
+	auto ret = st.completeSymbol("Apa::Apa::ap");
+	ASSERT_GT(ret.size(), 0);
+	ASSERT_EQ(ret.front()->getFullName(), "Apa::Apa::apa");
+
+	ret = st.completeSymbol("bepa.ce");
+	ASSERT_GT(ret.size(), 0);
+	ASSERT_EQ(ret.front()->getFullName(), "Apa::Apa::Bepa::cepa");
+}
+
+
+
+TEST_CASE("complete classes") {
+	{
+		auto st = RootSourceTree::CreateFromString(
+				"class Apa {"
+				"static int bepa;"
+				"};"
+				);
+
+		auto ret = st.completeSymbol("Apa::be");
+		ASSERT_GT(ret.size(), 0);
+		ASSERT_EQ(ret.front()->getLocalName(), "bepa");
+		ASSERT_EQ(ret.front()->getFullName(), "Apa::bepa");
+	}
+
+	{
+		auto st = RootSourceTree::CreateFromString(
+				"class Apa {"
+				"int bepa;"
+				"};"
+				"Apa apa;"
+				);
+
+		auto ret = st.completeSymbol("apa.be");
+		ASSERT_GT(ret.size(), 0);
+		ASSERT_EQ(ret.front()->getLocalName(), "bepa");
+		ASSERT_EQ(ret.front()->getFullName(), "Apa::bepa");
+	}
+}
+
+
+
+
 TEST_SUIT_END

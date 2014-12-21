@@ -106,15 +106,9 @@ public:
 			FilePosition());
 	void secondPass();
 	void checkFieldForNames(iterator &it);
-	void groupExpressionsWithOperators(iterator to, int count);
-	SourceTree::iterator groupExpressions(SourceTree::iterator last, int count);
+	void groupExpressionsWithOperators(iterator &begin, iterator &end);
 	SourceTree::iterator groupExpressions(SourceTree::iterator first,
 			SourceTree::iterator last);
-
-	bool tryGroupExpressions(iterator &it,
-			std::vector<SourceTree*> &unprocessedExpressions,
-			const std::vector<DataType> &pattern, DataType resultingType,
-			const std::vector<DataType> &replacementPattern);
 
 	void print(std::ostream &stream, int level);
 	std::string getFullName() const;
@@ -122,7 +116,6 @@ public:
 	std::string getTypeName() const;
 	void setParent(SourceTree *parent);
 
-	std::list<SourceTree *> completeExpression(std::string name);
 	std::list<SourceTree *> findExpressions(std::list<Token> tokens);
 	SourceTree *findDataType(std::string &name);
 	SourceTree *findBranchByType(DataType type);

@@ -21,7 +21,7 @@ public:
 	std::list<SourceTree*> findSymbol(std::string name, std::string context,
 			SourceTree *location = 0, SourceTree::DataType = SourceTree::None);
 
-	std::list<SourceTree*> completeSymbol(std::string name, std::string context,
+	std::list<SourceTree*> completeSymbol(std::string name, std::string context = "",
 			SourceTree *location = 0);
 
 

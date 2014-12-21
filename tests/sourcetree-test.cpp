@@ -215,7 +215,7 @@ TEST_CASE("group expressions by operators") {
 TEST_CASE("complete expression namespaces"){
 	{
 		auto st = RootSourceTree::CreateFromString("int Apa");
-		auto ret = st.completeExpression("Ap");
+		auto ret = st.completeSymbol("Ap");
 		ASSERT_GT(ret.size(), 0);
 		for (auto it: ret) {
 			cout << it->getFullName() << endl;
@@ -232,12 +232,12 @@ TEST_CASE("complete expression namespaces"){
 				"	}"
 				"}");
 
-		auto ret = st.completeExpression("Apa::be");
+		auto ret = st.completeSymbol("Apa::be");
 		ASSERT_GT(ret.size(), 0);
 		ASSERT_EQ(ret.front()->getLocalName(), "bepa");
 		ASSERT_EQ(ret.front()->getFullName(), "Apa::bepa");
 
-		ret = st.completeExpression("Apa::Bepa::ce");
+		ret = st.completeSymbol("Apa::Bepa::ce");
 		ASSERT_GT(ret.size(), 0);
 		ASSERT_EQ(ret.front()->getLocalName(), "cepa");
 		ASSERT_EQ(ret.front()->getFullName(), "Apa::Bepa::cepa");
@@ -246,63 +246,6 @@ TEST_CASE("complete expression namespaces"){
 }
 
 
-
-
-TEST_CASE("complete expression classes") {
-	{
-		auto st = RootSourceTree::CreateFromString(
-				"class Apa {"
-				"static int bepa;"
-				"};"
-				);
-
-		auto ret = st.completeExpression("Apa::be");
-		ASSERT_GT(ret.size(), 0);
-		ASSERT_EQ(ret.front()->getLocalName(), "bepa");
-		ASSERT_EQ(ret.front()->getFullName(), "Apa::bepa");
-	}
-
-	{
-		auto st = RootSourceTree::CreateFromString(
-				"class Apa {"
-				"int bepa;"
-				"};"
-				"Apa apa;"
-				);
-
-		auto ret = st.completeExpression("apa.be");
-		ASSERT_GT(ret.size(), 0);
-		ASSERT_EQ(ret.front()->getLocalName(), "bepa");
-		ASSERT_EQ(ret.front()->getFullName(), "Apa::bepa");
-	}
-}
-
-
-
-
-TEST_CASE("complete complex cases") {
-	auto st = RootSourceTree::CreateFromString(
-			"namespace Apa {"
-			"	class Apa {"
-			"		static int apa;"
-			"		int bepa;"
-			"		class Bepa {"
-			"			int cepa;"
-			"		};"
-			"	};"
-			"}"
-			"Apa::Apa apa;"
-			"Apa::Apa::Bepa bepa;"
-	);
-
-	auto ret = st.completeExpression("Apa::Apa::ap");
-	ASSERT_GT(ret.size(), 0);
-	ASSERT_EQ(ret.front()->getFullName(), "Apa::Apa::apa");
-
-	ret = st.completeExpression("bepa.ce");
-	ASSERT_GT(ret.size(), 0);
-	ASSERT_EQ(ret.front()->getFullName(), "Apa::Apa::Bepa::cepa");
-}
 
 
 
