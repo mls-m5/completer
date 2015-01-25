@@ -86,6 +86,9 @@ TEST_CASE("find symbol with 'using' statement") {
 	ERROR_NOT_IMPLEMENTED();
 }
 
+
+
+
 TEST_CASE("find symbol") {
 	auto st = RootSourceTree::CreateFromString(
 			"namespace Apa {"
@@ -113,6 +116,8 @@ TEST_CASE("find symbol") {
 	ASSERT_EQ(ret.size(), 1);
 	ASSERT_EQ(ret.front()->getFullName(), "Apa::Bepa::apa");
 }
+
+
 
 
 
@@ -144,11 +149,13 @@ TEST_CASE("complete complex cases") {
 
 
 
+
+
 TEST_CASE("complete classes") {
 	{
 		auto st = RootSourceTree::CreateFromString(
 				"class Apa {"
-				"static int bepa;"
+				"	static int bepa;"
 				"};"
 				);
 
@@ -161,7 +168,7 @@ TEST_CASE("complete classes") {
 	{
 		auto st = RootSourceTree::CreateFromString(
 				"class Apa {"
-				"int bepa;"
+				"	int bepa;"
 				"};"
 				"Apa apa;"
 				);
@@ -177,3 +184,5 @@ TEST_CASE("complete classes") {
 
 
 TEST_SUIT_END
+
+

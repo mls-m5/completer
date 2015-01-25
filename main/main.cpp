@@ -35,11 +35,21 @@ int completeSymbol(istream &stream, std::string expression){
 	auto completionList = st.completeSymbol(expression);
 
 	for (auto it: completionList) {
-		cout << "completion : " << it->getFullName() << endl;
-		cout << "info: " << it->getTypeName() << ", " <<
-				(it->getType() ? it->getType()->getFullName() : std::string(""))  << endl;
+//		cout << "completion : " << it->getFullName() << endl;
+//		cout << "info: " << it->getTypeName() << ", " <<
+//				(it->getType() ? it->getType()->getFullName() : std::string(""))  << endl;
+		cout << it->getLocalName() << endl;
 	}
 
+	return 0;
+}
+
+int dumpSymbols(istream &stream) {
+	RootSourceTree st;
+	st.parse(stream, FilePosition());
+	st.secondPass();
+
+	st.printSymbols(&cout, false);
 	return 0;
 }
 
@@ -49,6 +59,7 @@ int main(int argc, char **argv) {
 		Tokenize,
 		AstOutput,
 		GlobalComplete,
+		PrintSymbols,
 	} mode = Default;
 	std::string argument;
 
@@ -69,6 +80,9 @@ int main(int argc, char **argv) {
 				return 1;
 			}
 			argument = argv[i];
+		}
+		else if (arg == "--symbols") {
+			mode = PrintSymbols;
 		}
 		else if (arg == "-f" or arg == "--file"){
 			++i;
@@ -103,8 +117,11 @@ int main(int argc, char **argv) {
 	case GlobalComplete:
 		completeSymbol(*input, argument);
 		break;
+	case PrintSymbols:
+		dumpSymbols(*input);
+		break;
 	case Default:
-		cerr << "no mode selected --tokenize, --ast, or --complete" << endl;
+		cerr << "no mode selected --tokenize, --ast, --symbols, or --complete" << endl;
 	}
 }
 

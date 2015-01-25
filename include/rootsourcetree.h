@@ -25,7 +25,7 @@ public:
 			SourceTree *location = 0);
 
 
-	void printSymbols(std::ostream *stream = 0);
+	void printSymbols(std::ostream *stream = 0, bool printInfo = true);
 
 
 	//For testing mainly

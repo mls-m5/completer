@@ -635,7 +635,7 @@ void SourceTree::type(DataType t) {
 		for (auto it : typesToRegister) {
 			if (it == t) {
 				if (_isSymbol) {
-					return; //symbol is alreadyregistered
+					return; //symbol is already registered
 				} else {
 					_isSymbol = true;
 					_root->insertSymbol(this);

@@ -83,13 +83,20 @@ std::list<SourceTree*> RootSourceTree::findSymbol(std::string name,
 	return retList;
 }
 
-void RootSourceTree::printSymbols(std::ostream* stream) {
+void RootSourceTree::printSymbols(std::ostream* stream, bool printInfo) {
 	if (stream == 0) {
 		stream = &cout;
 	}
 
-	*stream << "numbers of symbols: " << _symbols.size() << endl;
-	for (auto it: _symbols) {
-		*stream << it.first << " : " << it.second->getFullName() << " : " << it.second->getTypeName() << endl;
+	if (printInfo) {
+		*stream << "numbers of symbols: " << _symbols.size() << endl;
+		for (auto it: _symbols) {
+			*stream << it.first << " : " << it.second->getFullName() << " : " << it.second->getTypeName() << endl;
+		}
+	}
+	else {
+		for (auto it: _symbols) {
+			*stream << it.second->getLocalName() << endl;
+		}
 	}
 }
